@@ -4,6 +4,7 @@
 <title>Connext | Login</title>
 <meta name="description" content="Login to Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <script src="https://www.google.com/recaptcha/api.js"></script>
@@ -39,7 +40,7 @@ a {
 input {
     width: 16vw;
 
-    margin: 1.5vh 0 1.5vh 0;
+    margin-bottom: 3vh;
     padding: 1.2vh 1vw 1.2vh 1vw;
 
     border-radius: 25px;
@@ -51,8 +52,8 @@ input {
 }
 
 button {
+    margin-bottom: 3vh;
     padding: 1vh 1.5vw 1vh 1.5vw;
-    margin: 1.2vh 0 1.2vh 0;
 
     border-radius: 25px;
     border-width: 0;
@@ -69,41 +70,51 @@ button {
 }
 
 #sidebar {
-  top: 0;
-  left: 0;
+    top: 0;
+    left: 0;
 
-  height: 96vh;
-  width: 28vw;
+    height: 96vh;
+    width: 28vw;
 
-  padding: 2vh 2vw 2vh 2vw;
+    padding: 2vh 2vw 2vh 2vw;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 
-  position: fixed;
-  z-index: 1;
+    position: fixed;
+    z-index: 1;
 
-  background-color: rgba(43, 43, 43, 0.8);
-  box-shadow: #00000050 0px 0px 8px;
+    background-color: rgba(43, 43, 43, 0.8);
+    box-shadow: #00000050 0px 0px 8px;
+}
+
+#head {
+    margin-bottom: 4vh;
 }
 
 #logo {
     height: 12vh;
     width: 12vh;
 
-    border-radius: 50%;
-    margin: 1vh 0 1vh 0;
-}
+    margin-bottom: 1vh;
 
-#error {
-    margin-top: 0.5vh;
+    border-radius: 50%;
 }
 
 #seperator {
     width: 20vw;
-    margin: 1vh 4vw 1vh 4vw;
+}
+
+#input {
+    width: 18vw;
+
+    padding: 0 1vw 0 1vw;
+}
+
+#error {
+    margin-top: 0.5vh;
 }
 
 #button-seperator {
@@ -112,6 +123,121 @@ button {
 
 #login-button {
     cursor: pointer;
+}
+
+@media screen and (min-width: 1920px) {
+    body {
+        background-size: cover;
+    }
+}
+
+@media screen and (min-height: 1080px) {
+    body {
+        background-size: cover;
+    }
+}
+
+@media screen and (max-width: 1840px) and (min-width: 1280px) {
+    input {
+        width: 22vw;
+    }
+    #sidebar {
+        width: 96vw;
+    }
+    #seperator {
+        width: 26vw;
+    }
+    #input {
+        width: 24vw;
+    }
+}
+
+@media screen and (max-width: 480px) and (min-height: 640px) {
+    input {
+        width: 64vw;
+
+        padding: 1.5vh 4vw 1.5vh 4vw;
+    }
+    button {
+        padding: 1.5vh 6vw 1.5vh 6vw;
+    }
+    #sidebar {
+        width: 96vw;
+    }
+    #seperator {
+        width: 78vw;
+    }
+    #input {
+        width: 76vw;
+    }
+}
+
+@media screen and (max-height: 480px) and (min-width: 640px) {
+    input {
+        width: 64vw;
+
+        padding: 3vh 3vw 3vh 3vw;
+    }
+    button {
+        padding: 3vh 3vw 3vh 3vw;
+    }
+    #sidebar {
+        width: 96vw;
+    }
+    #logo {
+        width: 12vw;
+        height: 12vw;
+    }
+    #seperator {
+        width: 78vw;
+    }
+    #input {
+        width: 76vw;
+    }
+}
+
+@media screen and (max-width: 1080px) and (min-width: 640px) and (min-height: 720px) {
+    input {
+        width: 64vw;
+
+        padding: 2vh 3vw 2vh 3vw;
+    }
+    button {
+        padding: 1.5vh 4vw 1.5vh 4vw;
+    }
+    #sidebar {
+        width: 96vw;
+    }
+    #seperator {
+        width: 78vw;
+    }
+    #input {
+        width: 76vw;
+    }
+}
+
+@media screen and (max-height: 1080px) and (min-height: 640px) and (max-width: 1200px) and (min-width: 720px) {
+    input {
+        width: 64vw;
+
+        padding: 2vh 2vw 2vh 2vw;
+    }
+    button {
+        padding: 2vh 2vw 2vh 2vw;
+    }
+    #sidebar {
+        width: 96vw;
+    }
+    #logo {
+        width: 12vw;
+        height: 12vw;
+    }
+    #seperator {
+        width: 78vw;
+    }
+    #input {
+        width: 76vw;
+    }
 }
 </style>
 <script>
@@ -166,12 +292,16 @@ window.login = async function(token) {
 <body>
 <div id="sidebar">
 <div id="content">
+<div id="head">
 <img src="/media/logo.webp" id="logo" alt="Logo">
 <h5 id="error"></h5>
 <hr id="seperator">
+</div>
+<div id="input">
 <input type="text" id="email" placeholder="Email">
 <input type="password" id="password" placeholder="Password">
 <button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="login" data-action="submit">Login</button>
+</div>
 </div>
 </div>
 </body>

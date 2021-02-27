@@ -31,7 +31,7 @@ verify_cache = []
 recovery_cache = []
 
 def gen_id():
-    return int("".join(random.choices(string.digits, k=16)))
+    return int("1".join(random.choices(string.digits, k=15)))
 
 def gen_token():
     return "".join(random.choices(string.ascii_letters + string.digits, k=256))
@@ -52,7 +52,7 @@ def valid_int(integer):
 def valid_id(id):
     if not valid_int(id):
         return False
-    return len(str(id)) >= 15 and len(str(id)) <= 16
+    return len(str(id)) == 16
 
 def valid_name(name):
     if not valid_string(name):

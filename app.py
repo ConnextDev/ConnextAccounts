@@ -305,7 +305,7 @@ def oauth_authorize():
         if not session.get("logged_in"):
             return redirect(f"/login?type={response_type}&id={app.id}", 302)
 
-        return render_template("authorize.html", app=Markup(app.asdict()))
+        return render_template("oauth_authorize.html", name=app.name, owner=app.owner.name, callback=app.callback, permission=app.permission, website=app.website, description=app.description, verified=app.verified)
     else:
         return {"text": "Response type not supported!", "error": "invalid_response_type"}, 400
 
@@ -527,10 +527,10 @@ def api_set_owner(id):
     if not json:
         return {"text": "Bad request!", "error": "bad_request"}, 400
 
-    owner_code = json.get("owner_code")
-    if not valid_code(owner_code):
+    code = json.get("code")
+    if not valid_code(code):
         return {"text": "Invalid owner code!", "error": "invalid_owner_code"}, 400
-    if owner_code != owner_secret:
+    if code != owner_secret:
         return {"text": "Incorrect owner code!", "error": "incorrect_owner_code"}, 401
 
     if not valid_id(id): 
