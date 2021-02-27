@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Connext | Login</title>
+<meta name="description" content="Login to Connext Accounts">
+<meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
+<link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<script src="https://www.google.com/recaptcha/api.js"></script>
+<style>
+/* font stuff */
+@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6DRAW_0.woff2) format('woff2');unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr4TRAW_0.woff2) format('woff2');unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5DRAW_0.woff2) format('woff2');unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6TRAW_0.woff2) format('woff2');unicode-range: U+1F00-1FFF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5jRAW_0.woff2) format('woff2');unicode-range: U+0370-03FF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6jRAW_0.woff2) format('woff2');unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6zRAW_0.woff2) format('woff2');unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5TRA.woff2) format('woff2');unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+
+body, html {
+    margin: 0;
+    padding: 0;
+
+    font-family: "Noto Sans", sans-serif;
+
+    color: #EEE;
+
+    background: url("/media/bg.webp");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+
+    scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+    display: none;
+}
+
+a {
+    text-decoration: none;
+    color: #00c3ff;
+}
+
+input {
+    width: 16vw;
+
+    margin: 1.5vh 0 1.5vh 0;
+    padding: 1.2vh 1vw 1.2vh 1vw;
+
+    border-radius: 25px;
+    border-width: 0;
+    outline: 0;
+    border: 0;
+
+    font-family: "Noto Sans", sans-serif;
+}
+
+button {
+    padding: 1vh 1.5vw 1vh 1.5vw;
+    margin: 1.2vh 0 1.2vh 0;
+
+    border-radius: 25px;
+    border-width: 0;
+    outline: 0;
+    border: 0;
+
+    cursor: pointer;
+
+    background: #154f4b;
+    color: #eee;
+
+    font-size: 20px;
+    font-family: "Noto Sans", sans-serif;
+}
+
+#sidebar {
+  top: 0;
+  left: 0;
+
+  height: 96vh;
+  width: 28vw;
+
+  padding: 2vh 2vw 2vh 2vw;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  position: fixed;
+  z-index: 1;
+
+  background-color: rgba(43, 43, 43, 0.8);
+  box-shadow: #00000050 0px 0px 8px;
+}
+
+#logo {
+    height: 12vh;
+    width: 12vh;
+
+    border-radius: 50%;
+    margin: 1vh 0 1vh 0;
+}
+
+#error {
+    margin-top: 0.5vh;
+}
+
+#seperator {
+    width: 20vw;
+    margin: 1vh 4vw 1vh 4vw;
+}
+
+#button-seperator {
+    margin: 1vh 0 1vh 0;
+}
+
+#login-button {
+    cursor: pointer;
+}
+
+.h-captcha {
+    margin-top: 1vh;
+}
+</style>
+<script>
+const query = new URLSearchParams(location.search);
+
+if (query.get("id") != undefined) {
+    window.app_id = query.get("id")
+}
+
+if (query.get("type") != undefined) {
+    window.app_type = query.get("type")
+}
+
+window.register = async function(token) {
+    // i can't think of something funny to put here sorry
+    let name = document.getElementById("name").value
+    if (name == false) {
+        document.getElementById("error").innerText = "Please specify a username!"
+        return
+    }
+
+    let email = document.getElementById("email").value
+    if (email == false) {
+        document.getElementById("error").innerText = "Please specify an email!"
+        return
+    }
+    if (email.length < 5) {
+        document.getElementById("error").innerText = "Invalid email!"
+        return
+    }
+    if (email != document.getElementById("email-confirm").value) {
+        document.getElementById("error").innerText = "Emails don't match!"
+        return
+    }
+
+    let password = document.getElementById("password").value
+    if (password == false) {
+        document.getElementById("error").innerText = "Please specify a password!"
+        return
+    }
+    if (password.length < 8) {
+        document.getElementById("error").innerText = "Invalid password!"
+        return
+    }
+    if (password != document.getElementById("password-confirm").value) {
+        document.getElementById("error").innerText = "Passwords don't match!"
+        return
+    }
+
+    let json = {name: name, email: email, password: password, captcha: token}
+
+    let response = await fetch("/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
+    let data = await response.json()
+    if (response.status == 200) {
+        localStorage.recovery_code = data.recovery_code
+        if (window.app_type == undefined || window.app_id == undefined) {
+            location.href = "/register/resend"
+        } else {
+            location.href = "/register/resend?type=" + window.app_type + "&id=" + window.app_id
+        }
+    } else {
+        document.getElementById("error").innerText = data.text
+    }
+}
+</script>
+</head>
+<body>
+<div id="sidebar">
+<div id="content">
+<img src="/media/logo.webp" id="logo" alt="Logo">
+<h5 id="error"></h5>
+<hr id="seperator">
+<input type="text" id="name" placeholder="Username">
+<input type="text" id="email" placeholder="Email">
+<input type="text" id="email-confirm" placeholder="Confirm Email">
+<input type="password" id="password" placeholder="Password">
+<input type="password" id="password-confirm" placeholder="Confirm Password">
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="register" data-action="submit">Register</button>
+</div>
+</div>
+</body>
+</html>
