@@ -103,7 +103,7 @@ button {
     border-radius: 50%;
 }
 
-#seperator {
+#separator {
     width: 20vw;
 }
 
@@ -114,10 +114,13 @@ button {
 }
 
 #error {
+    width: 18vw;
+
     margin-top: 0.5vh;
+    padding: 0 1vw 0 1vw;
 }
 
-#button-seperator {
+#button-separator {
     margin: 1vh 0 1vh 0;
 }
 
@@ -144,10 +147,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 26vw;
     }
-    #input {
+    #input, #error {
         width: 24vw;
     }
 }
@@ -164,10 +167,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -188,10 +191,10 @@ button {
         width: 12vw;
         height: 12vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -208,10 +211,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -232,10 +235,10 @@ button {
         width: 12vw;
         height: 12vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -255,16 +258,20 @@ window.resend = async function(token) {
     let email = document.getElementById("email").value
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
+        grecaptcha.reset()
         return
     }
     if (email.length < 5) {
         document.getElementById("error").innerText = "Invalid email!"
+        grecaptcha.reset()
         return
     }
 
     let code = localStorage.recovery_code
     if (code == false) {
         document.getElementById("error").innerText = "No recovery code!"
+        grecaptcha.reset()
+        return
     }
 
     let json = {code: code, email: email, captcha: token}
@@ -275,6 +282,7 @@ window.resend = async function(token) {
         document.getElementById("error").innerText = "Resent email."
     } else {
         document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
     }
 }
 const login = async function() {
@@ -292,11 +300,11 @@ const login = async function() {
 <div id="head">
 <img src="/media/logo.webp" id="logo" alt="Logo">
 <h5 id="error"></h5>
-<hr id="seperator">
+<hr id="separator">
 </div>
 <div id="input">
 <h3>Check your email for a verification link.</h3>
-<input type="text" id="email" placeholder="Email">
+<input type="text" id="email" placeholder="Email" autofocus>
 <button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="resend" data-action="submit">Resend</button>
 <a onclick="login()"><h5 style="margin-top: 0.8vh">Continue to Login</h5>
 </div>

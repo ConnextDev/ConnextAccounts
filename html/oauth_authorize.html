@@ -104,7 +104,7 @@ button {
     border-radius: 50%;
 }
 
-#seperator {
+#separator {
     width: 20vw;
 }
 
@@ -115,10 +115,13 @@ button {
 }
 
 #error {
+    width: 18vw;
+
     margin-top: 0.5vh;
+    padding: 0 1vw 0 1vw;
 }
 
-#button-seperator {
+#button-separator {
     margin: 1vh 0 1vh 0;
 }
 
@@ -145,10 +148,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 26vw;
     }
-    #input {
+    #input, #error {
         width: 24vw;
     }
 }
@@ -165,10 +168,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -189,10 +192,10 @@ button {
         width: 12vw;
         height: 12vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -209,10 +212,10 @@ button {
     #sidebar {
         width: 96vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -233,10 +236,10 @@ button {
         width: 12vw;
         height: 12vw;
     }
-    #seperator {
+    #separator {
         width: 78vw;
     }
-    #input {
+    #input, #error {
         width: 76vw;
     }
 }
@@ -256,20 +259,24 @@ window.login = async function(token) {
     let email = document.getElementById("email").value
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
+        grecaptcha.reset()
         return
     }
     if (email.length < 5) {
         document.getElementById("error").innerText = "Invalid email!"
+        grecaptcha.reset()
         return
     }
 
     let password = document.getElementById("password").value
     if (password == false) {
         document.getElementById("error").innerText = "Please specify a password!"
+        grecaptcha.reset()
         return
     }
     if (password.length < 8) {
         document.getElementById("error").innerText = "Invalid password!"
+        grecaptcha.reset()
         return
     }
 
@@ -286,6 +293,7 @@ window.login = async function(token) {
         }
     } else {
         document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
     }
 }
 </script>
@@ -296,7 +304,7 @@ window.login = async function(token) {
 <div id="head">
 <img src="/media/logo.webp" id="logo" alt="Logo">
 <h5 id="error"></h5>
-<hr id="seperator">
+<hr id="separator">
 </div>
 <div id="input">
 <h3>Login to {{name}} by {{owner}} with Connext</h3>
