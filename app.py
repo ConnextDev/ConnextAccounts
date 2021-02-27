@@ -187,8 +187,8 @@ def api_login():
             return {"text": "Please verify your account!", "error": "account_unverified"}, 403
 
         subject = "New Login"
-        ip = request.headers.get('CF-Connecting-IP')
-        body = f"Hello {account.name}!\n\nThere has been a new login to your account! If this was not you, reset your password immediately and enable 2FA if possible. Logged in at {locate_ip(ip)} by {ip}"
+        ip = IP(request.headers.get('CF-Connecting-IP'))
+        body = f"Hello {account.name}!\n\nThere has been a new login to your account! If this was not you, reset your password immediately and enable 2FA if possible. Logged in at {ip.location} by {ip.address}"
         email_send(email, subject, body)
 
         session["logged_in"] = True
@@ -280,7 +280,7 @@ def oauth_register(account):
 @app.route("/oauth/user")
 def oauth_user(id):
     args = request.args
-    if args is None:
+    if not args:
         return {"text": "Bad request!", "error": "bad_request"}, 400
 
     token = args.get("token")
@@ -298,16 +298,16 @@ def oauth_user(id):
     if not app.approved:
         return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
-    response = {"id": user.id}
+    response_json = {"id": user.id}
     
     if app.permission >= 2:
-        response["name"] = user.name
+        response_json["name"] = user.name
     if app.permission >= 3:
-        response["permission"] = user.permission
+        response_json["permission"] = user.permission
     if app.permission >= 4:
-        response["email"] = user.email
+        response_json["email"] = user.email
 
-    return response, 200
+    return response_json, 200
 
 ## Developer
 
