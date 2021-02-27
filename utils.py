@@ -280,6 +280,7 @@ class IP:
     def __init__(self, address):
         if not address:
             self.address = "Unknown IP"
+            self.location = "Unknown Location"
         else:
             self.address = address
 

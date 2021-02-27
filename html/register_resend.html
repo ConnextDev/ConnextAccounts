@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Connext | Register</title>
-<meta name="description" content="Register an account on Connext Accounts">
+<title>Connext | Login</title>
+<meta name="description" content="Login to Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
 <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -110,6 +110,10 @@ button {
     margin: 1vh 0 1vh 0;
 }
 
+#email {
+    margin-top: 0.4vh;
+}
+
 #login-button {
     cursor: pointer;
 }
@@ -125,14 +129,7 @@ if (query.get("type") != undefined) {
     window.app_type = query.get("type")
 }
 
-window.register = async function(token) {
-    // i can't think of something funny to put here sorry
-    let name = document.getElementById("name").value
-    if (name == false) {
-        document.getElementById("error").innerText = "Please specify a username!"
-        return
-    }
-
+window.resend = async function(token) {
     let email = document.getElementById("email").value
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
@@ -142,38 +139,27 @@ window.register = async function(token) {
         document.getElementById("error").innerText = "Invalid email!"
         return
     }
-    if (email != document.getElementById("email-confirm").value) {
-        document.getElementById("error").innerText = "Emails don't match!"
-        return
+
+    let code = localStorage.recovery_code
+    if (code == false) {
+        document.getElementById("error").innerText = "No recovery code!"
     }
 
-    let password = document.getElementById("password").value
-    if (password == false) {
-        document.getElementById("error").innerText = "Please specify a password!"
-        return
-    }
-    if (password.length < 8) {
-        document.getElementById("error").innerText = "Invalid password!"
-        return
-    }
-    if (password != document.getElementById("password-confirm").value) {
-        document.getElementById("error").innerText = "Passwords don't match!"
-        return
-    }
+    let json = {code: code, email: email, captcha: token}
 
-    let json = {name: name, email: email, password: password, captcha: token}
-
-    let response = await fetch("/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
+    let response = await fetch("/api/register/resend", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()
     if (response.status == 200) {
-        localStorage.recovery_code = data.recovery_code
-        if (window.app_type == undefined || window.app_id == undefined) {
-            location.href = "/register/resend"
-        } else {
-            location.href = "/register/resend?type=" + window.app_type + "&id=" + window.app_id
-        }
+        document.getElementById("error").innerText = "Resent email."
     } else {
         document.getElementById("error").innerText = data.text
+    }
+}
+const login = async function() {
+    if (window.app_type == undefined || window.app_id == undefined) {
+        location.href = "/login"
+    } else {
+        location.href = "/login?type=" + window.app_type + "&id=" + window.app_id
     }
 }
 </script>
@@ -184,12 +170,10 @@ window.register = async function(token) {
 <img src="/media/logo.webp" id="logo" alt="Logo">
 <h5 id="error"></h5>
 <hr id="seperator">
-<input type="text" id="name" placeholder="Username">
+<h3>Check your email for a verification link.</h3>
 <input type="text" id="email" placeholder="Email">
-<input type="text" id="email-confirm" placeholder="Confirm Email">
-<input type="password" id="password" placeholder="Password">
-<input type="password" id="password-confirm" placeholder="Confirm Password">
-<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="register" data-action="submit">Register</button>
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="resend" data-action="submit">Resend</button>
+<a onclick="login()"><h5 style="margin-top: 0.8vh">Continue to Login</h5>
 </div>
 </div>
 </body>

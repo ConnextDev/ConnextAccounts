@@ -43,6 +43,20 @@ def media_handler(file):
 
 ## Templates
 
+@app.route("/register")
+def register():
+    if not session.get("logged_in"):
+        return render_template("register.html")
+    else:
+        return redirect("/account", 302)
+
+@app.route("/register/resend")
+def register_resend():
+    if not session.get("logged_in"):
+        return render_template("register_resend.html")
+    else:
+        return redirect("/account", 302)
+
 @app.route("/login")
 def login():
     if not session.get("logged_in"):
@@ -50,10 +64,10 @@ def login():
     else:
         return redirect("/account", 302)
 
-@app.route("/register")
-def register():
+@app.route("/verify")
+def verify():
     if not session.get("logged_in"):
-        return render_template("register.html")
+        return render_template("verify.html")
     else:
         return redirect("/account", 302)
 
@@ -118,10 +132,62 @@ def api_register():
 
     subject = "Connext Email Verification"
     ip = IP(request.headers.get('CF-Connecting-IP'))
-    body = f"Hello {name}!\n\nThanks for signing up with Connext! One quick thing, we need you to verify your account.\nGo to https://connext.dev/login?verify_code={verify_code} to verify your account.\nRegistered at {ip.location} by {ip.address}"
+    body = f"Hello {name}!\n\nThanks for signing up with Connext! One quick thing, we need you to verify your account.\n\nGo to https://connext.dev/verify?code={verify_code} to verify your account.\nRegistered at {ip.location} by {ip.address}"
     email_send(email, subject, body)
 
     return {"text": "Account created.", "recovery_code": recovery_code}, 200
+
+@app.route("/api/register/resend", methods=["POST"])
+def api_register_resend():
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    code = json.get("code")
+    if not valid_code(code):
+        return {"text": "Invalid recovery code!", "error": "invalid_recovery_code"}, 400
+    user = User.Recovery(code)
+    if not user.exists:
+        return {"text": "Recovery code doesn't exist!", "error": "recovery_code_not_exist"}, 404
+    if user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+
+    email = json.get("email")
+    if not valid_email(email):
+        return {"text": "Invalid email!", "error": "invalid_email"}, 400
+    email_user = User.Email(email)
+    if email_user.exists and user.id != email_user.id:
+        return {"text": "Email already exists!", "error": "email_exists"}, 403
+    email = email.lower()
+
+    captcha = json.get("captcha")
+    if not valid_string(captcha):
+        return {"text": "Invalid captcha response!", "error": "invalid_captcha_response"}, 400
+    response = requests.post("https://www.google.com/recaptcha/api/siteverify", data={"secret": captcha_v3, "response": captcha})
+    data = response.json()
+    if not data["success"]:
+        return {"text": "Invalid captcha response!", "error": "invalid_captcha_response"}, 401
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET email = ? WHERE id = ?", (email, user.id))
+    conn.commit()
+
+    for verification in verify_cache:
+        if user.id == verification["id"]:
+            verify_cache.remove(verification)
+
+    verify_code = gen_code()
+    while verify_code_exists(verify_code):
+        verify_code = gen_code()
+
+    verify_cache.append({"id": user.id, "code": verify_code, "expires": 86400})
+
+    subject = "Connext Email Verification"
+    ip = IP(request.headers.get('CF-Connecting-IP'))
+    body = f"Hello {user.name}!\n\nThanks for signing up with Connext! One quick thing, we need you to verify your account.\n\nGo to https://connext.dev/verify?code={verify_code} to verify your account.\nRegistered at {ip.location} by {ip.address}"
+    email_send(email, subject, body)
+
+    return {"text": "Email sent."}, 200
 
 @app.route("/api/verify", methods=["POST"])
 def api_verify():
@@ -152,7 +218,7 @@ def api_verify():
 
             return {"text": "Verified account."}, 200
 
-    return {"text": f"Verification code doesn't exist! Please request a new email from https://connext.dev/register/resend.", "error": "verify_code_not_exist"}, 404
+    return {"text": f"Verification code doesn't exist! Please request a new email from <a href='https://connext.dev/register/resend'>https://connext.dev/register/resend</a>.", "error": "verify_code_not_exist"}, 404
 
 @app.route("/api/login", methods=["POST"])
 def api_login():
@@ -188,7 +254,7 @@ def api_login():
 
         subject = "New Login"
         ip = IP(request.headers.get('CF-Connecting-IP'))
-        body = f"Hello {account.name}!\n\nThere has been a new login to your account! If this was not you, reset your password immediately and enable 2FA if possible. Logged in at {ip.location} by {ip.address}"
+        body = f"Hello {account.name}!\n\nThere has been a new login to your account!\n\nIf this was not you, reset your password immediately and enable 2FA if possible. Logged in at {ip.location} by {ip.address}"
         email_send(email, subject, body)
 
         session["logged_in"] = True
