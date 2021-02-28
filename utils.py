@@ -28,8 +28,10 @@ captcha_v3 = vars["captcha_v3"]
 captcha_v2 = vars["captcha_v2"]
 
 login_cache = []
+ratelimit_cache = []
 verify_cache = []
-recovery_cache = []
+
+threads = []
 
 def gen_id():
     return int("".join(random.choices(string.digits, k=16)))
@@ -43,7 +45,7 @@ def gen_code():
 def valid_string(string):
     if string == None or not type(string) == str:
         return False
-    return len(string) > 0 and len(string) <= 256
+    return len(string) > 0 and len(string) <= 512
 
 def valid_int(integer):
     if integer == None:
@@ -307,3 +309,45 @@ def auth(f):
 
         return f(account, *args, **kwargs)
     return wrap
+
+def ratelimit(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        cf_ip = request.headers.get("CF-Connecting-IP")
+        if cf_ip:
+            ip = IP(cf_ip)
+        else:
+            ip = IP(request.remote_addr)
+
+        for user in ratelimit_cache:
+            if ip.address == user["ip"]:
+                if user["time"] > 0:
+                    return {"text": "You are being ratelimited!", "error": "ratelimit"}, 429
+                else:
+                    user["time"] = 3
+                    return f(*args, **kwargs)
+
+        ratelimit_cache.append({"ip": ip.address, "time": 3})
+
+        return f(*args, **kwargs)
+    return wrap
+
+def verify_expire():
+    while 1:
+        for verification in verify_cache:
+            verification["expires"] -= 10
+            if verification["expires"] < 10:
+                verify_cache.remove(verification)
+            time.sleep(10)
+
+def ratelimit_expire():
+    while 1:
+        for user in ratelimit_cache:
+            if user["time"] > 0:
+                user["time"] -= 0.5
+            time.sleep(0.5)
+
+threads.append(threading.Thread(target=verify_expire))
+threads.append(threading.Thread(target=ratelimit_expire))
+for thread in threads:
+    thread.start()

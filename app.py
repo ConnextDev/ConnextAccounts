@@ -79,14 +79,16 @@ def login():
 
 # API
 
-# add duplicate avoider
+# ban ratelimit
 # complete moderation
+# switch to elif
 
 ## Register/Login
 
 ### Register
 
 @app.route("/api/register", methods=["POST"])
+@ratelimit
 def api_register():
     json = request.json
     if not json:
@@ -149,6 +151,7 @@ def api_register():
     return {"text": "Account created.", "recovery_code": recovery_code}, 200
 
 @app.route("/api/register/resend", methods=["POST"])
+@ratelimit
 def api_register_resend():
     json = request.json
     if not json:
@@ -201,6 +204,7 @@ def api_register_resend():
     return {"text": "Email sent."}, 200
 
 @app.route("/api/verify", methods=["POST"])
+@ratelimit
 def api_verify():
     json = request.json
     if not json:
@@ -234,6 +238,7 @@ def api_verify():
 ### Login
 
 @app.route("/api/login", methods=["POST"])
+@ratelimit
 def api_login():
     json = request.json
     if not json:
@@ -404,6 +409,7 @@ def oauth_user(id):
 ## Developer
 
 @app.route("/api/apps/create", methods=["POST"])
+@ratelimit
 @auth
 def api_apps_create(account):
     json = request.json
@@ -439,6 +445,7 @@ def api_apps_create(account):
     return {"text": "App created.", "id": id}, 200
 
 @app.route("/api/apps/<int:id>/update", methods=["POST"])
+@ratelimit
 @auth
 def api_apps_update(account, id):
     json = request.json
@@ -479,6 +486,7 @@ def api_apps_update(account, id):
     return {"text": "App updated."}, 200
 
 @app.route("/api/apps/<int:id>/delete", methods=["POST"])
+@ratelimit
 @auth
 def api_apps_delete(account, id):
     if not valid_id(id):
@@ -559,19 +567,6 @@ def api_set_owner(id):
     conn.commit()
 
     return {"text": f"Gave {user.name} owner access."}, 200
-
-# Threads
-
-def verify_expire():
-    while 1:
-        for verification in verify_cache:
-            verification["expires"] -= 10
-            if verification["expires"] < 10:
-                verify_cache.remove(verification)
-            time.sleep(10)
-
-verify_thread = threading.Thread(target=verify_expire)
-verify_thread.start()
 
 if __name__ == "__main__":
     app.run()

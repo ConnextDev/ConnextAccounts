@@ -313,6 +313,7 @@ window.resend = async function(token) {
     let data = await response.json()
     if (response.status == 200) {
         document.getElementById("error").innerText = "Resent email."
+        unlock()
         return
     } else {
         document.getElementById("error").innerText = data.text
