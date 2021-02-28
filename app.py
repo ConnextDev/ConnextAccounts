@@ -79,7 +79,7 @@ def login():
 
 # API
 
-# complete moderation
+# add better ban system
 # simplify user checking
 
 # overall stuff
@@ -663,6 +663,23 @@ def api_apps_delete(account, id):
     conn.commit()
 
     return {"text": "App deleted."}, 200
+
+### Admin
+
+@app.route("/api/apps")
+@auth
+def api_apps(account):
+    if account.permission < 4:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM apps")
+    apps = cursor.fetchall()
+    app_list = []
+    for app in apps:
+        app_list.append(App(app[0]).asdict())
+
+    return {"apps": app_list}, 200
 
 @app.route("/api/apps/<int:id>/approve", methods=["POST"])
 @auth
