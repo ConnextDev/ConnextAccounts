@@ -79,7 +79,6 @@ def login():
 
 # API
 
-# ban ratelimit
 # complete moderation
 # switch to elif
 
@@ -110,13 +109,13 @@ def api_register():
     name = str(json.get("name"))
     if not valid_name(name): 
         return {"text": "Invalid username!", "error": "invalid_username"}, 400
-    if User.Name(name).exists:
+    elif User.Name(name).exists:
         return {"text": "Username already exists!", "error": "username_exists"}, 403
 
     email = json.get("email")
     if not valid_email(email):
         return {"text": "Invalid email!", "error": "invalid_email"}, 400
-    if User.Email(email).exists:
+    elif User.Email(email).exists:
         return {"text": "Email already exists!", "error": "email_exists"}, 403
     email = email.lower()
 
@@ -176,7 +175,7 @@ def api_register_resend():
     user = User.Recovery(code)
     if not user.exists:
         return {"text": "Recovery code doesn't exist!", "error": "recovery_code_not_exist"}, 404
-    if user.banned:
+    elif user.banned:
         return {"text": "Account is banned!", "error": "account_banned"}, 403
 
     email = json.get("email")
@@ -263,7 +262,7 @@ def api_login():
     account = User.Email(email)
     if not account.exists:
         return {"text": "Email doesn't exist!", "error": "email_not_exist"}, 404
-    if account.banned:
+    elif account.banned:
         return {"text": "Account is banned!", "error": "account_banned"}, 403
     email = email.lower()
 
@@ -342,7 +341,7 @@ def oauth_authorize():
         app = App(id)
         if not app.exists:
             return {"text": "App doesn't exist!", "error": "app_not_exist"}, 404
-        if not app.approved:
+        elif not app.approved:
             return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
         return render_template("oauth_authorize.html", id=app.id, name=app.name, owner=app.owner.name, callback=app.callback, permission=app.permission, website=app.website, verified=app.verified)
@@ -364,7 +363,7 @@ def oauth_register(account):
         app = App(id)
         if not app.exists:
             return {"text": "App doesn't exist!", "error": "app_not_exist"}, 404
-        if not app.approved:
+        elif not app.approved:
             return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
         captcha = json.get("captcha")
@@ -403,9 +402,9 @@ def oauth_user(id):
     user = User.AppToken(token)
     if not user.exists:
         return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
-    if user.banned:
+    elif user.banned:
         return {"text": "User is banned!", "error": "user_banned"}, 403
-    if not user.verified:
+    elif not user.verified:
         return {"text": "User is not verified!", "error": "user_unverified"}, 403
 
     app = user.app
@@ -436,7 +435,7 @@ def api_apps_create(account):
     permission = json.get("permission")
     if not valid_int(permission):
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
-    if permission < 1 or permission > 2:
+    elif permission < 1 or permission > 2:
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
 
     name = json.get("name")
@@ -470,7 +469,7 @@ def api_apps_update(account, id):
     app = App(id)
     if not app.exists:
         return {"text": "App doesn't exist!", "error": "app_not_exist"}, 404
-    if account.id != app.owner.id:
+    elif account.id != app.owner.id:
         return {"text": "You do not own this app!", "error": "no_app_access"}, 403
 
     cursor = conn.cursor()
@@ -482,7 +481,7 @@ def api_apps_update(account, id):
     permission = json.get("permission")
     if valid_int(permission):
         cursor.execute("UPDATE apps SET permission = ? WHERE id = ?", (permission, id))
-    if permission < 1 or permission > 2:
+    elif permission < 1 or permission > 2:
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
 
     name = json.get("name")
@@ -507,7 +506,7 @@ def api_apps_delete(account, id):
     app = App(id)
     if not app.exists:
         return {"text": "App doesn't exist!", "error": "app_not_exist"}, 404
-    if account.id != app.owner.id:
+    elif account.id != app.owner.id:
         return {"text": "You do not own this app!", "error": "no_app_access"}, 403
 
     cursor = conn.cursor()
@@ -564,7 +563,7 @@ def api_set_owner(id):
     code = json.get("code")
     if not valid_code(code):
         return {"text": "Invalid owner code!", "error": "invalid_owner_code"}, 400
-    if code != owner_secret:
+    elif code != owner_secret:
         return {"text": "Incorrect owner code!", "error": "incorrect_owner_code"}, 401
 
     if not valid_id(id): 
@@ -572,7 +571,7 @@ def api_set_owner(id):
     user = User(id)
     if not user.exists:
         return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
-    if not user.verified:
+    elif not user.verified:
         return {"text": "User is not verified!", "error": "user_unverified"}, 403
 
     cursor = conn.cursor()
