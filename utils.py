@@ -8,7 +8,7 @@ try:
     conn = mariadb.connect(user="accounts", host="localhost", port=3306, database="accounts")
 
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (id bigint, name text, email text, password text, token text, permission int, secret text, recovery text, verified int, twofa int)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (id bigint, name text, email text, password text, token text, permission int, recovery text, verified int, twofa int, secret text)")
     cursor.execute("CREATE TABLE IF NOT EXISTS user_apps (id bigint, app_id bigint, token text)")
     cursor.execute("CREATE TABLE IF NOT EXISTS apps (id bigint, owner_id bigint, callback text, permission int, name text, website text, approved int, verified int)")
     cursor.execute("CREATE TABLE IF NOT EXISTS reports (report_id bigint, report_title text, report_body text, email text)")
@@ -128,10 +128,10 @@ class User:
             self.token = data[0][4]
             self.permission = int(data[0][5])
             self.banned = self.permission < 2
-            self.secret = data[0][6]
-            self.recovery = data[0][7]
-            self.verified = bool(int(data[0][8]))
-            self.twofa = bool(int(data[0][9]))
+            self.recovery = data[0][6]
+            self.verified = bool(int(data[0][7]))
+            self.twofa = bool(int(data[0][8]))
+            self.secret = data[0][9]
 
     def apps(self):
         apps = []
