@@ -80,7 +80,7 @@ def login():
 # API
 
 # complete moderation
-# switch to elif
+# simplify user checking
 
 # overall stuff
 
@@ -264,6 +264,8 @@ def api_login():
         return {"text": "Email doesn't exist!", "error": "email_not_exist"}, 404
     elif account.banned:
         return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not account.verified:
+        return {"text": "Please verify your account!", "error": "account_unverified"}, 403
     email = email.lower()
 
     password = str(json.get("password"))
@@ -279,9 +281,6 @@ def api_login():
         return {"text": "Invalid captcha response!", "error": "invalid_captcha_response"}, 401
 
     if check_password_hash(account.password_hash, password):
-        if not account.verified:
-            return {"text": "Please verify your account!", "error": "account_unverified"}, 403
-
         subject = "New Login"
         ip = IP(request.headers.get('CF-Connecting-IP'))
         body = f"Hello {account.name}!\n\nThere has been a new login to your account!\n\nIf this was not you, reset your password immediately and enable 2FA if possible. Logged in at {ip.location} by {ip.address}"
@@ -305,7 +304,9 @@ def api_login_code(account):
 
     return {"text": "Registered login code."}, 200
 
-## User Info
+## User
+
+### Info
 
 @app.route("/api/account")
 @auth
@@ -321,6 +322,153 @@ def api_users_id(id):
         return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
 
     return user.asdict(), 200
+
+### Admin
+
+@app.route("/api/users/<int:id>/set/owner", methods=["POST"])
+@ratelimit
+def api_set_owner(id):
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    code = json.get("code")
+    if not valid_code(code):
+        return {"text": "Invalid owner code!", "error": "invalid_owner_code"}, 400
+    elif code != owner_secret:
+        return {"text": "Incorrect owner code!", "error": "incorrect_owner_code"}, 401
+
+    if not valid_id(id): 
+        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
+    user = User(id)
+    if not user.exists:
+        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
+    elif user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not user.verified:
+        return {"text": "User is not verified!", "error": "user_unverified"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET permission = 5 WHERE id = ?", (user.id,))
+    conn.commit()
+
+    return {"text": f"Gave {user.name} owner access."}, 200
+
+@app.route("/api/users/<int:id>/set/admin", methods=["POST"])
+@ratelimit
+@auth
+def api_set_admin(account, id):
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    if account.permission < 5:
+        return {"text": "Insufficient permissions!"}, 403
+
+    if not valid_id(id): 
+        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
+    user = User(id)
+    if not user.exists:
+        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
+    elif user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not user.verified:
+        return {"text": "User is not verified!", "error": "user_unverified"}, 403
+    elif user.permission > 4:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET permission = 4 WHERE id = ?", (user.id,))
+    conn.commit()
+
+    return {"text": f"Gave {user.name} admin access."}, 200
+
+@app.route("/api/users/<int:id>/set/mod", methods=["POST"])
+@ratelimit
+@auth
+def api_set_mod(account, id):
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    if account.permission < 4:
+        return {"text": "Insufficient permissions!"}, 403
+
+    if not valid_id(id): 
+        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
+    user = User(id)
+    if not user.exists:
+        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
+    elif user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not user.verified:
+        return {"text": "User is not verified!", "error": "user_unverified"}, 403
+    elif user.permission > 3:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET permission = 3 WHERE id = ?", (user.id,))
+    conn.commit()
+
+    return {"text": f"Gave {user.name} moderator access."}, 200
+
+@app.route("/api/users/<int:id>/set/mod", methods=["POST"])
+@ratelimit
+@auth
+def api_set_member(account, id):
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    if account.permission < 4:
+        return {"text": "Insufficient permissions!"}, 403
+
+    if not valid_id(id): 
+        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
+    user = User(id)
+    if not user.exists:
+        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
+    elif user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not user.verified:
+        return {"text": "User is not verified!", "error": "user_unverified"}, 403
+    elif user.permission > 3:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET permission = 2 WHERE id = ?", (user.id,))
+    conn.commit()
+
+    return {"text": f"Set {user.name} to a member."}, 200
+
+@app.route("/api/users/<int:id>/temp/ban", methods=["POST"])
+@ratelimit
+@auth
+def api_temp_ban(account, id):
+    json = request.json
+    if not json:
+        return {"text": "Bad request!", "error": "bad_request"}, 400
+
+    if account.permission < 3:
+        return {"text": "Insufficient permissions!"}, 403
+
+    if not valid_id(id): 
+        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
+    user = User(id)
+    if not user.exists:
+        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
+    elif user.banned:
+        return {"text": "Account is banned!", "error": "account_banned"}, 403
+    elif not user.verified:
+        return {"text": "User is not verified!", "error": "user_unverified"}, 403
+    elif user.permission > 2:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET permission = 1 WHERE id = ?", (user.id,))
+    conn.commit()
+
+    return {"text": f"Temporarily banned {user.name}."}, 200
 
 ## OAuth
 
@@ -551,34 +699,6 @@ def api_apps_verify(account, id):
     conn.commit()
 
     return {"text": "App verified."}, 200
-
-## Admin
-
-@app.route("/api/users/<int:id>/set/owner", methods=["POST"])
-def api_set_owner(id):
-    json = request.json
-    if not json:
-        return {"text": "Bad request!", "error": "bad_request"}, 400
-
-    code = json.get("code")
-    if not valid_code(code):
-        return {"text": "Invalid owner code!", "error": "invalid_owner_code"}, 400
-    elif code != owner_secret:
-        return {"text": "Incorrect owner code!", "error": "incorrect_owner_code"}, 401
-
-    if not valid_id(id): 
-        return {"text": "Invalid user ID!", "error": "invalid_user_id"}, 400
-    user = User(id)
-    if not user.exists:
-        return {"text": "User doesn't exist!", "error": "user_not_exist"}, 404
-    elif not user.verified:
-        return {"text": "User is not verified!", "error": "user_unverified"}, 403
-
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET permission = 5 WHERE id = ?", (user.id,))
-    conn.commit()
-
-    return {"text": f"Gave {user.name} owner access."}, 200
 
 if __name__ == "__main__":
     app.run()

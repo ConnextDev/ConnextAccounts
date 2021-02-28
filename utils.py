@@ -302,9 +302,9 @@ def auth(f):
         account = User.Token(token)
         if not account.exists:
             return {"text": "Invalid token!", "error": "invalid_token"}, 401
-        if account.banned:
+        elif account.banned:
             return {"text": "Account is banned!", "error": "account_banned"}, 403
-        if not account.verified:
+        elif not account.verified:
             return {"text": "Account is not verified!", "error": "account_unverified"}, 403
 
         return f(account, *args, **kwargs)
