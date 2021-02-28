@@ -9,8 +9,8 @@ try:
 
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS users (id bigint, name text, email text, password text, token text, permission int, secret text, recovery text, verified int, twofa int)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS user_apps (id bigint, app_id int, token text)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS apps (id bigint, owner_id bigint, callback text, permission int, name text, website text, description text, approved int, verified int)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS user_apps (id bigint, app_id bigint, token text)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS apps (id bigint, owner_id bigint, callback text, permission int, name text, website text, approved int, verified int)")
     cursor.execute("CREATE TABLE IF NOT EXISTS reports (report_id bigint, report_title text, report_body text, email text)")
     conn.commit()
 except mariadb.Error as e:
@@ -27,11 +27,12 @@ session_secret = vars["session_secret"]
 captcha_v3 = vars["captcha_v3"]
 captcha_v2 = vars["captcha_v2"]
 
+login_cache = []
 verify_cache = []
 recovery_cache = []
 
 def gen_id():
-    return int("1".join(random.choices(string.digits, k=15)))
+    return int("".join(random.choices(string.digits, k=16)))
 
 def gen_token():
     return "".join(random.choices(string.ascii_letters + string.digits, k=256))
@@ -42,7 +43,7 @@ def gen_code():
 def valid_string(string):
     if string == None or not type(string) == str:
         return False
-    return len(string) > 0
+    return len(string) > 0 and len(string) <= 256
 
 def valid_int(integer):
     if integer == None:
@@ -52,7 +53,7 @@ def valid_int(integer):
 def valid_id(id):
     if not valid_int(id):
         return False
-    return len(str(id)) == 16
+    return len(str(id)) >= 15 and len(str(id)) <= 16
 
 def valid_name(name):
     if not valid_string(name):
@@ -252,13 +253,12 @@ class App:
             self.permission = int(data[0][3])
             self.name = data[0][4]
             self.website = data[0][5]
-            self.description = data[0][6]
-            self.approved = bool(int(data[0][7]))
-            self.verified = bool(int(data[0][8]))
+            self.approved = bool(int(data[0][6]))
+            self.verified = bool(int(data[0][7]))
 
     def asdict(self):
         if self.exists:
-            return {"exists": int(self.exists), "id": self.id, "owner": self.owner.asdict(), "callback": self.callback, "permission": self.permission, "name": self.name, "website": self.website, "description": self.description, "approved": int(self.approved), "verified": int(self.verified)}
+            return {"exists": int(self.exists), "id": self.id, "owner": self.owner.asdict(), "callback": self.callback, "permission": self.permission, "name": self.name, "website": self.website, "approved": int(self.approved), "verified": int(self.verified)}
         else:
             return {"exists": int(self.exists)}
 

@@ -254,12 +254,46 @@ if (query.get("type") != undefined) {
     window.app_type = query.get("type")
 }
 
+let locked = false
+
+const lock = async function() {
+    locked = true
+    document.getElementById("login-button").innerText = "Registering..."
+    document.getElementById("login-button").style.cursor = "default"
+}
+
+const unlock = async function() {
+    locked = false
+    document.getElementById("login-button").innerText = "Register"
+    document.getElementById("login-button").style.cursor = "cursor"
+}
+
+const login_code = async function() {
+    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
+    let data = response.json()
+    if (response.status == 200) {
+        if (window.app_type == undefined || window.app_id == undefined) {
+            location.href = "/account"
+        } else {
+            location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
+        }
+    }
+}
+
+login_code()
+
 window.register = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock()
+    }
     // i can't think of something funny to put here sorry
     let name = document.getElementById("name").value
     if (name == false) {
         document.getElementById("error").innerText = "Please specify a username!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -267,16 +301,19 @@ window.register = async function(token) {
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (email.length < 5) {
         document.getElementById("error").innerText = "Invalid email!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (email != document.getElementById("email-confirm").value) {
         document.getElementById("error").innerText = "Emails don't match!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -284,16 +321,19 @@ window.register = async function(token) {
     if (password == false) {
         document.getElementById("error").innerText = "Please specify a password!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (password.length < 8) {
         document.getElementById("error").innerText = "Invalid password!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (password != document.getElementById("password-confirm").value) {
         document.getElementById("error").innerText = "Passwords don't match!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -308,9 +348,20 @@ window.register = async function(token) {
         } else {
             location.href = "/register/resend?type=" + window.app_type + "&id=" + window.app_id
         }
+        return
     } else {
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
+        unlock()
+        return
+    }
+}
+
+const login = async function() {
+    if (window.app_type == undefined || window.app_id == undefined) {
+        location.href = "/login"
+    } else {
+        location.href = "/login?type=" + window.app_type + "&id=" + window.app_id
     }
 }
 </script>
@@ -329,7 +380,8 @@ window.register = async function(token) {
 <input type="text" id="email-confirm" placeholder="Confirm Email">
 <input type="password" id="password" placeholder="Password">
 <input type="password" id="password-confirm" placeholder="Confirm Password">
-<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="register" data-action="submit">Register</button>
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="register" data-action="submit" style="margin-bottom: 0">Register</button>
+<h5><a onclick="login()">Login</a></h5>
 </div>
 </div>
 </div>

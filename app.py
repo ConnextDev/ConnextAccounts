@@ -45,35 +45,46 @@ def media_handler(file):
 
 @app.route("/register")
 def register():
-    if not session.get("logged_in"):
-        return render_template("register.html")
-    else:
+    if session.get("code") in login_cache:
         return redirect("/account", 302)
+    else:
+        return render_template("register.html")
 
 @app.route("/register/resend")
 def register_resend():
-    if not session.get("logged_in"):
+    if session.get("code") in login_cache:
+        return redirect("/account", 302)
+    else:
         return render_template("register_resend.html")
-    else:
-        return redirect("/account", 302)
-
-@app.route("/login")
-def login():
-    if not session.get("logged_in"):
-        return render_template("login.html")
-    else:
-        return redirect("/account", 302)
 
 @app.route("/verify")
 def verify():
-    if not session.get("logged_in"):
-        return render_template("verify.html")
-    else:
+    if session.get("code") in login_cache:
         return redirect("/account", 302)
+    else:
+        return render_template("verify.html")
+
+@app.route("/login")
+def login():
+    id = request.args.get("id")
+    response_type = request.args.get("type")
+
+    if session.get("code") in login_cache:
+        if id and response_type:
+            return redirect(f"/oauth/authorize?type={response_type}&id={id}", 302)
+        else:
+            return redirect("/account", 302)
+    else:
+        return render_template("login.html")
 
 # API
 
+# add duplicate avoider
+# complete moderation
+
 ## Register/Login
+
+### Register
 
 @app.route("/api/register", methods=["POST"])
 def api_register():
@@ -220,6 +231,8 @@ def api_verify():
 
     return {"text": f"Verification code doesn't exist! Please request a new email from <a href='https://connext.dev/register/resend'>https://connext.dev/register/resend</a>.", "error": "verify_code_not_exist"}, 404
 
+### Login
+
 @app.route("/api/login", methods=["POST"])
 def api_login():
     json = request.json
@@ -257,11 +270,23 @@ def api_login():
         body = f"Hello {account.name}!\n\nThere has been a new login to your account!\n\nIf this was not you, reset your password immediately and enable 2FA if possible. Logged in at {ip.location} by {ip.address}"
         email_send(email, subject, body)
 
-        session["logged_in"] = True
+        login_code = gen_code()
+        session["code"] = login_code
+        login_cache.append(login_code)
 
         return {"text": "Logged in.", "token": account.token}, 200
     else: 
         return {"text": "Incorrect password!", "error": "incorrect_password"}, 401
+
+@app.route("/api/login/code")
+@auth
+def api_login_code(account):
+    if not session.get("code") in login_cache:
+        login_code = gen_code()
+        session["code"] = login_code
+        login_cache.append(login_code)
+
+    return {"text": "Registered login code."}, 200
 
 ## User Info
 
@@ -302,10 +327,7 @@ def oauth_authorize():
         if not app.approved:
             return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
-        if not session.get("logged_in"):
-            return redirect(f"/login?type={response_type}&id={app.id}", 302)
-
-        return render_template("oauth_authorize.html", name=app.name, owner=app.owner.name, callback=app.callback, permission=app.permission, website=app.website, description=app.description, verified=app.verified)
+        return render_template("oauth_authorize.html", id=app.id, name=app.name, owner=app.owner.name, callback=app.callback, permission=app.permission, website=app.website, verified=app.verified)
     else:
         return {"text": "Response type not supported!", "error": "invalid_response_type"}, 400
 
@@ -327,8 +349,16 @@ def oauth_register(account):
         if not app.approved:
             return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
+        captcha = json.get("captcha")
+        if not valid_string(captcha):
+            return {"text": "Invalid captcha response!", "error": "invalid_captcha_response"}, 400
+        response = requests.post("https://www.google.com/recaptcha/api/siteverify", data={"secret": captcha_v3, "response": captcha})
+        data = response.json()
+        if not data["success"]:
+            return {"text": "Invalid captcha response!", "error": "invalid_captcha_response"}, 401
+
         for app in account.apps():
-            if id == app.id:
+            if id == app.id and app.token:
                 return {"text": "Token granted.", "token": app.token}, 200
 
         token = gen_code()
@@ -364,23 +394,14 @@ def oauth_user(id):
     if not app.approved:
         return {"text": "App isn't approved!", "error": "app_unapproved"}, 403
 
-    response_json = {"id": user.id}
+    response_json = {"id": user.id, "name": user.name}
     
-    if app.permission >= 2:
-        response_json["name"] = user.name
-    if app.permission >= 3:
-        response_json["permission"] = user.permission
-    if app.permission >= 4:
+    if app.permission == 2:
         response_json["email"] = user.email
 
     return response_json, 200
 
 ## Developer
-
-@app.route("/api/apps")
-@auth
-def api_apps(account):
-    return {"apps": account.asdict(False)["apps"]}, 200
 
 @app.route("/api/apps/create", methods=["POST"])
 @auth
@@ -396,7 +417,7 @@ def api_apps_create(account):
     permission = json.get("permission")
     if not valid_int(permission):
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
-    if permission < 1 or permission > 4:
+    if permission < 1 or permission > 2:
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
 
     name = json.get("name")
@@ -407,16 +428,12 @@ def api_apps_create(account):
     if not valid_string(website):
         return {"text": "Invalid website!", "error": "invalid_website"}, 400
 
-    description = json.get("description")
-    if not valid_string(description):
-        return {"text": "Invalid description!", "error": "invalid_description"}, 400
-
     id = gen_id()
     while App(id).exists:
         id = gen_id()
 
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO apps VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)", (id, account.id, callback, permission, name, website, description))
+    cursor.execute("INSERT INTO apps VALUES (?, ?, ?, ?, ?, ?, 0, 0)", (id, account.id, callback, permission, name, website))
     conn.commit()
 
     return {"text": "App created.", "id": id}, 200
@@ -445,7 +462,7 @@ def api_apps_update(account, id):
     permission = json.get("permission")
     if valid_int(permission):
         cursor.execute("UPDATE apps SET permission = ? WHERE id = ?", (permission, id))
-    if permission < 1 or permission > 4:
+    if permission < 1 or permission > 2:
         return {"text": "Invalid permissions!", "error": "invalid_permission"}, 400
 
     name = json.get("name")
@@ -455,10 +472,6 @@ def api_apps_update(account, id):
     website = json.get("website")
     if valid_string(website):
         cursor.execute("UPDATE apps SET website = ? WHERE id = ?", (website, id))
-
-    description = json.get("description")
-    if valid_string(description):
-        cursor.execute("UPDATE apps SET description = ? WHERE id = ?", (description, id))
 
     cursor.execute("UPDATE apps SET approved = 0 WHERE id = ?", (id,))
     conn.commit()

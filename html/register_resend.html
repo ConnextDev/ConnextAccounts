@@ -254,16 +254,48 @@ if (query.get("type") != undefined) {
     window.app_type = query.get("type")
 }
 
+let locked = false
+
+const lock = async function() {
+    locked = true
+    document.getElementById("login-button").innerText = "Resending..."
+    document.getElementById("login-button").style.cursor = "default"
+}
+
+const unlock = async function() {
+    locked = false
+    document.getElementById("login-button").innerText = "Resend"
+    document.getElementById("login-button").style.cursor = "cursor"
+}
+
+const login_code = async function() {
+    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
+    let data = response.json()
+    if (response.status == 200) {
+        location.href = "/account"
+    }
+}
+
+login_code()
+
 window.resend = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock()
+    }
+
     let email = document.getElementById("email").value
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (email.length < 5) {
         document.getElementById("error").innerText = "Invalid email!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -271,6 +303,7 @@ window.resend = async function(token) {
     if (code == false) {
         document.getElementById("error").innerText = "No recovery code!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -280,9 +313,12 @@ window.resend = async function(token) {
     let data = await response.json()
     if (response.status == 200) {
         document.getElementById("error").innerText = "Resent email."
+        return
     } else {
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
+        unlock()
+        return
     }
 }
 const login = async function() {
@@ -304,9 +340,9 @@ const login = async function() {
 </div>
 <div id="input">
 <h3>Check your email for a verification link.</h3>
-<input type="text" id="email" placeholder="Email" autofocus>
-<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="resend" data-action="submit">Resend</button>
-<a onclick="login()"><h5 style="margin-top: 0.8vh">Continue to Login</h5>
+<input type="text" id="email" placeholder="Email" style="margin-bottom: 2vh" autofocus>
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="resend" data-action="submit" style="margin-bottom: 0">Resend</button>
+<h5><a onclick="login()">Continue to Login</a></h5>
 </div>
 </div>
 </div>

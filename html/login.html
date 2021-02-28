@@ -254,16 +254,52 @@ if (query.get("type") != undefined) {
     window.app_type = query.get("type")
 }
 
+let locked = false
+
+const lock = async function() {
+    locked = true
+    document.getElementById("login-button").innerText = "Logging in..."
+    document.getElementById("login-button").style.cursor = "default"
+}
+
+const unlock = async function() {
+    locked = false
+    document.getElementById("login-button").innerText = "Login"
+    document.getElementById("login-button").style.cursor = "cursor"
+}
+
+const login_code = async function() {
+    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
+    let data = response.json()
+    if (response.status == 200) {
+        if (window.app_type == undefined || window.app_id == undefined) {
+            location.href = "/account"
+        } else {
+            location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
+        }
+    }
+}
+
+login_code()
+
 window.login = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock()
+    }
+
     let email = document.getElementById("email").value
     if (email == false) {
         document.getElementById("error").innerText = "Please specify an email!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (email.length < 5) {
         document.getElementById("error").innerText = "Invalid email!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -271,11 +307,13 @@ window.login = async function(token) {
     if (password == false) {
         document.getElementById("error").innerText = "Please specify a password!"
         grecaptcha.reset()
+        unlock()
         return
     }
     if (password.length < 8) {
         document.getElementById("error").innerText = "Invalid password!"
         grecaptcha.reset()
+        unlock()
         return
     }
 
@@ -290,9 +328,20 @@ window.login = async function(token) {
         } else {
             location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
         }
+        return
     } else {
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
+        unlock()
+        return
+    }
+}
+
+const register = async function() {
+    if (window.app_type == undefined || window.app_id == undefined) {
+        location.href = "/register"
+    } else {
+        location.href = "/register?type=" + window.app_type + "&id=" + window.app_id
     }
 }
 </script>
@@ -308,7 +357,8 @@ window.login = async function(token) {
 <div id="input">
 <input type="text" id="email" placeholder="Email" autofocus>
 <input type="password" id="password" placeholder="Password">
-<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="login" data-action="submit">Login</button>
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="login" data-action="submit" style="margin-bottom: 0">Login</button>
+<h5><a onclick="register()">Register</a></h5>
 </div>
 </div>
 </div>

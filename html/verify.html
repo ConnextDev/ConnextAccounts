@@ -249,16 +249,66 @@ button {
 }
 </style>
 <script>
+const query = new URLSearchParams(location.search);
+
+window.code = query.get("code")
+
+let locked = false
+let finished = false
+
+const lock = async function() {
+    locked = true
+}
+
+const unlock = async function() {
+    locked = false
+}
+
+const login_code = async function() {
+    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
+    let data = response.json()
+    if (response.status == 200) {
+        if (window.app_type == undefined || window.app_id == undefined) {
+            location.href = "/account"
+        } else {
+            location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
+        }
+    }
+}
+
+const load = async function() {
+    while (finished == false) {}
+
+    if (window.code == undefined) {
+        document.getElementById("input").style.display = "none"
+        document.getElementById("separator").style.display = "none"
+        document.getElementById("error").innerText = "Invalid link!"
+    }
+}
+
+login_code()
+
+finished = true
+
 window.verify = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock()
+    }
+
     let json = {code: code, captcha: token}
 
     let response = await fetch("/api/verify", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()
     if (response.status == 200) {
         location.href = "/login"
+        return
     } else {
         document.getElementById("error").innerHTML = data.text
         grecaptcha.reset()
+        unlock()
+        return
     }
 }
 </script>
@@ -272,19 +322,9 @@ window.verify = async function(token) {
 <hr id="separator">
 </div>
 <div id="input">
+<script>load()</script>
 <div class="g-recaptcha" data-sitekey="6Lf4a2oaAAAAAKaQVuSAubV3OajbJfSNKWg0xAun" data-callback="verify"></div>
 </div>
-<script>
-const query = new URLSearchParams(location.search);
-
-if (query.get("code") != undefined) {
-    window.code = query.get("code")
-} else {
-    document.getElementById("input").style.display = "none"
-    document.getElementById("separator").style.display = "none"
-    document.getElementById("error").innerText = "Invalid link!"
-}
-</script>
 </div>
 </div>
 </body>
