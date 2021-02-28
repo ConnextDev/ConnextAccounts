@@ -83,6 +83,19 @@ def login():
 # complete moderation
 # switch to elif
 
+# overall stuff
+
+# home page
+# account page
+# reset password
+# change username
+# change email
+# change password
+# change icon
+# enable/disable 2fa
+# reports
+# app dashboard
+
 ## Register/Login
 
 ### Register
