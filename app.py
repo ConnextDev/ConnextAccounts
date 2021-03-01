@@ -327,6 +327,21 @@ def api_users_id(id):
 
 ### Admin
 
+@app.route("/api/users")
+@auth
+def api_users(account):
+    if account.permission < 4:
+        return {"text": "Insufficient permissions!"}, 403
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT id from users")
+    data = cursor.fetchall()
+    users = []
+    for user_id in data:
+        users.append(User(user_id[0]).asdict())
+
+    return {"users": users}
+
 @app.route("/api/users/<int:id>/set/owner", methods=["POST"])
 @ratelimit
 def api_set_owner(id):
@@ -676,12 +691,12 @@ def api_apps(account):
 
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM apps")
-    apps = cursor.fetchall()
-    app_list = []
-    for app in apps:
-        app_list.append(App(app[0]).asdict())
+    data = cursor.fetchall()
+    apps = []
+    for app_id in data:
+        apps.append(App(app_id[0]).asdict())
 
-    return {"apps": app_list}, 200
+    return {"apps": apps}, 200
 
 @app.route("/api/apps/<int:id>/approve", methods=["POST"])
 @auth

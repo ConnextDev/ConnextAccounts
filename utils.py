@@ -138,16 +138,16 @@ class User:
 
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM user_apps WHERE id = ?", (self.id,))
-        user_apps = cursor.fetchall()
-        for app in user_apps:
+        data = cursor.fetchall()
+        for app in data:
             user_app = App(app[1])
             user_app.token = app[2]
             user_app.owned = False
             apps.append(user_app)
 
         cursor.execute("SELECT * FROM apps WHERE owner_id = ?", (self.id,))
-        user_apps = cursor.fetchall()
-        for app in user_apps:
+        data = cursor.fetchall()
+        for app in data:
             app = App(app[0])
 
             exists = False
@@ -313,11 +313,7 @@ def auth(f):
 def ratelimit(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        cf_ip = request.headers.get("CF-Connecting-IP")
-        if cf_ip:
-            ip = IP(cf_ip)
-        else:
-            ip = IP(request.remote_addr)
+        ip = request.headers.get("CF-Connecting-IP")
 
         for user in ratelimit_cache:
             if ip.address == user["ip"]:
