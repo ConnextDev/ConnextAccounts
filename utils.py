@@ -313,7 +313,7 @@ def auth(f):
 def ratelimit(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        ip = request.headers.get("CF-Connecting-IP")
+        ip = IP(request.headers.get("CF-Connecting-IP"))
 
         for user in ratelimit_cache:
             if ip.address == user["ip"]:
