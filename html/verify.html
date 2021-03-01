@@ -17,10 +17,12 @@ body, html {
     padding: 0;
 
     font-family: "Noto Sans", sans-serif;
+    font-display: swap;
 
     color: #EEE;
 
-    background: url("/media/bg.webp");
+    background-color: rgba(43, 43, 43);
+    background-image: url("/media/bg.webp");
     background-repeat: no-repeat;
     background-attachment: fixed;
 
@@ -126,11 +128,6 @@ button {
 
 #login-button {
     cursor: pointer;
-}
-
-.g-recaptcha {
-    display: flex;
-    justify-content: center;
 }
 
 @media screen and (min-width: 1920px) {
@@ -246,6 +243,11 @@ button {
     #input, #error {
         width: 76vw;
     }
+}
+
+.g-recaptcha {
+    display: flex;
+    justify-content: center;
 }
 </style>
 <script>

@@ -81,6 +81,7 @@ def login():
 
 # add better ban system
 # simplify user checking
+# custom/json errors
 
 # overall stuff
 
@@ -94,6 +95,7 @@ def login():
 # enable/disable 2fa
 # reports
 # app dashboard
+# account deletion
 
 ## Register/Login
 
