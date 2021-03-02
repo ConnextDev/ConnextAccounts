@@ -88,14 +88,6 @@ def verify_code_exists(verify_code):
             return True
     return False
 
-def locate_ip(ip):
-    response = requests.get(f"http://ip-api.com/json/{ip}")
-    data = response.json()
-    try: 
-        return data["city"] + ", " + data["regionName"]
-    except: 
-        return "Unknown Location"
-
 def email_send(email, subject, body):
     def email_wrapper(email, subject, body):
         with smtplib.SMTP(smtp_url, 587) as smtp:

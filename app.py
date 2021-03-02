@@ -80,8 +80,10 @@ def login():
 # API
 
 # add better ban system
+# change app permission system
 # simplify user checking
 # custom/json errors
+# sqlalchemy
 
 # overall stuff
 
@@ -146,7 +148,7 @@ def api_register():
         recovery_code = gen_code()
 
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, 2, NULL, ?, 0, 0)", (id, name, email, generate_password_hash(password), token, recovery_code))
+    cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, 2, ?, 0, 0, NULL)", (id, name, email, generate_password_hash(password), token, recovery_code))
     conn.commit()
 
     os.system(f"cp ./media/logo.webp ./icon/{id}.webp")
