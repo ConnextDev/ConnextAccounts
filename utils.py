@@ -65,7 +65,7 @@ def valid_name(name):
 def valid_email(email):
     if not valid_string(email):
         return False
-    return len(email) <= 32 and len(email) >= 5 and "+" not in email
+    return len(email) <= 64 and len(email) >= 5 and "+" not in email
 
 def valid_password(password):
     if not valid_string(password):
