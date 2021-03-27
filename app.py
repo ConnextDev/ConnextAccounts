@@ -791,6 +791,16 @@ def oauth_register(account, response_type, app_id):
 
         db.session.commit()
 
+        subject = "New App"
+        ip = IP(request.headers.get('CF-Connecting-IP'))
+        body = (f"Hello {escape(account.name)}!\n\n"
+                f"The app {escape(app.name)} was added to your account!\n\n"
+                "If this was not you, reset your password immediately and "
+                "enable 2FA if possible, then remove the app.\n\n"
+                f"Logged in at {ip.location} by {ip.address}")
+
+        email_send(account.email, subject, body)
+
         return {"text": f"Token created for {account.name}.",
                 "token": token, "account": user_asdict(account)}, 200
     else:
