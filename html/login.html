@@ -267,12 +267,12 @@ const lock = async function() {
 const unlock = async function() {
     locked = false
     document.getElementById("login-button").innerText = "Login"
-    document.getElementById("login-button").style.cursor = "cursor"
+    document.getElementById("login-button").style.cursor = "pointer"
 }
 
 const login_code = async function() {
     let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
-    let data = response.json()
+    let data = await response.json()
     if (response.status == 200) {
         if (window.app_type == undefined || window.app_id == undefined) {
             location.href = "/account"

@@ -283,7 +283,7 @@ const lock = async function() {
 const unlock = async function() {
     locked = false
     document.getElementById("login-button").innerText = "Login"
-    document.getElementById("login-button").style.cursor = "cursor"
+    document.getElementById("login-button").style.cursor = "pointer"
 }
 
 const login_code = async function() {
@@ -350,7 +350,7 @@ window.login = async function(token) {
 </div>
 <div id="input">
 <h3 style="margin-bottom: 1.5vh">Login to {{name}} with Connext</h3>
-<h5 style="margin-top: 0">{{owner}} | <a href="{{website}}">{{website}}</a></h5>
+<h5 style="margin-top: 0">{{owner}} | <a href="{{website}}" target="_blank">{{website}}</a></h5>
 <p>This app will have your:</p>
 <div id="permissions">
 <li>Username</li>

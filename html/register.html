@@ -267,7 +267,7 @@ const lock = async function() {
 const unlock = async function() {
     locked = false
     document.getElementById("login-button").innerText = "Register"
-    document.getElementById("login-button").style.cursor = "cursor"
+    document.getElementById("login-button").style.cursor = "pointer"
 }
 
 const login_code = async function() {
@@ -306,7 +306,7 @@ window.register = async function(token) {
         unlock()
         return
     }
-    if (email.length < 5) {
+    if (email.length < 5 || email.length > 64) {
         document.getElementById("error").innerText = "Invalid email!"
         grecaptcha.reset()
         unlock()

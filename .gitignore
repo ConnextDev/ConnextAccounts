@@ -1,6 +1,9 @@
 __pycache__/
+.vscode/
 code/
 icon/
 old/
+media/*.kra
 
 vars.json
+comments.txt
