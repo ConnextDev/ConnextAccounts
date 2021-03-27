@@ -246,14 +246,24 @@ button {
 }
 </style>
 <script>
+document.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+        document.getElementById("login-button").click()
+    }
+})
+
 const query = new URLSearchParams(location.search);
 
-if (query.get("id") != undefined) {
-    window.app_id = query.get("id")
+if (query.get("redirect") != undefined) {
+    window.redirect = query.get("redirect")
 }
 
-if (query.get("type") != undefined) {
-    window.app_type = query.get("type")
+if (query.get("app_id") != undefined) {
+    window.app_id = query.get("app_id")
+}
+
+if (query.get("response_type") != undefined) {
+    window.response_type = query.get("response_type")
 }
 
 let locked = false
@@ -269,20 +279,6 @@ const unlock = async function() {
     document.getElementById("login-button").innerText = "Login"
     document.getElementById("login-button").style.cursor = "pointer"
 }
-
-const login_code = async function() {
-    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
-    let data = await response.json()
-    if (response.status == 200) {
-        if (window.app_type == undefined || window.app_id == undefined) {
-            location.href = "/account"
-        } else {
-            location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
-        }
-    }
-}
-
-login_code()
 
 window.login = async function(token) {
     if (locked) {
@@ -324,11 +320,14 @@ window.login = async function(token) {
     let response = await fetch("/api/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()
     if (response.status == 200) {
-        localStorage.token = data.token
-        if (window.app_type == undefined || window.app_id == undefined) {
-            location.href = "/account"
-        } else {
-            location.href = "/oauth/authorize?type=" + window.app_type + "&id=" + window.app_id
+        if (window.redirect != undefined) {
+            location.replace("/" + redirect)
+        }
+        else if (window.response_type != undefined && window.app_id != undefined) {
+            location.replace("/oauth/authorize?response_type=" + window.response_type + "&app_id=" + window.app_id)
+        } 
+        else {
+            location.replace("/account")
         }
         return
     } else {
@@ -340,11 +339,16 @@ window.login = async function(token) {
 }
 
 const register = async function() {
-    if (window.app_type == undefined || window.app_id == undefined) {
-        location.href = "/register"
-    } else {
-        location.href = "/register?type=" + window.app_type + "&id=" + window.app_id
+    if (window.redirect != undefined) {
+        location.replace("/register?redirect=" + redirect)
     }
+    else if (window.response_type != undefined && window.app_id != undefined) {
+        location.replace("/register?response_type=" + window.response_type + "&app_id=" + window.app_id)
+    } 
+    else {
+        location.replace("/register")
+    }
+    return
 }
 </script>
 </head>

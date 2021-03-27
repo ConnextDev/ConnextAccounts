@@ -246,7 +246,7 @@ button {
 }
 
 #verified {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -261,18 +261,19 @@ button {
 }
 </style>
 <script>
+document.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+        document.getElementById("login-button").click()
+    }
+})
+
 const query = new URLSearchParams(location.search);
 
-if (query.get("id") != undefined) {
-    window.app_id = query.get("id")
-}
-
-if (query.get("type") != undefined) {
-    window.app_type = query.get("type")
+if (query.get("response_type") != undefined) {
+    window.response_type = query.get("response_type")
 }
 
 let locked = false
-let finished = false
 
 const lock = async function() {
     locked = true
@@ -286,37 +287,6 @@ const unlock = async function() {
     document.getElementById("login-button").style.cursor = "pointer"
 }
 
-const login_code = async function() {
-    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
-    let data = response.json()
-    if (response.status == 200) {
-        let response = await fetch("/api/account", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
-        let data = await response.json()
-        if (response.status == 200) {
-            window.name = data.name
-        }
-    } else {
-        location.href = "/login?type=" + window.app_type + "&id=" + window.app_id
-    }
-}
-
-const load = async function() {
-    while (finished == false) {}
-
-    if ("{{verified}}" == "True") {
-        document.getElementById("verified").style.display = "flex"
-    }
-    if ({{permission}} == 2) {
-        document.getElementById("permissions").innerHTML += "<li>Email</li>"
-    }
-
-    document.getElementById("user").innerHTML += "<h5>Logged in as " + window.name + "</h5>"
-}
-
-login_code()
-
-finished = true
-
 window.login = async function(token) {
     if (locked) {
         return
@@ -324,12 +294,12 @@ window.login = async function(token) {
         lock()
     }
 
-    let json = {type: "token", id: {{id}}, captcha: token}
+    let json = {response_type: "token", app_id: {{app.id}}, captcha: token}
 
     let response = await fetch("/oauth/register", {method: "POST", headers: {"Content-Type": "application/json", "token": localStorage.token}, body: JSON.stringify(json)})
     let data = await response.json()
     if (response.status == 200) {
-        location.href = "{{callback}}?token=" + data.token
+        location.replace("{{app.callback}}#token=" + data.token)
         return
     } else {
         document.getElementById("error").innerText = data.text
@@ -349,16 +319,18 @@ window.login = async function(token) {
 <hr id="separator">
 </div>
 <div id="input">
-<h3 style="margin-bottom: 1.5vh">Login to {{name}} with Connext</h3>
-<h5 style="margin-top: 0">{{owner}} | <a href="{{website}}" target="_blank">{{website}}</a></h5>
+<h3 style="margin-bottom: 1.5vh">Login to {{app.name}} with Connext</h3>
+<h5 style="margin-top: 0">{{owner.name}} | <a href="https://{{app.website}}" target="_blank">{{app.website}}</a></h5>
 <p>This app will have your:</p>
-<div id="permissions">
+<div style="margin-bottom: 2vh">
+<li>User ID</li>
 <li>Username</li>
 </div>
-<h5 id="verified"><img src="/media/verified.webp"><div style="margin-left: 0.4vw"></div>Verified</h5>
+{% if app.verified %}
+<h5 id="verified"><img src="/media/verified.webp"><div style="margin: 0 0.4vw 0 0;"></div>Verified</h5>
+{% endif %}
 <button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="login" data-action="submit" style="margin-bottom: 0">Login</button>
-<div id="user"></div>
-<script>load()</script>
+<h5>Logged in as {{account.name}}</h5>
 </div>
 </div>
 </div>

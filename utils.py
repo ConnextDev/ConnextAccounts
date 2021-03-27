@@ -10,6 +10,8 @@ import threading
 import werkzeug
 import jwt
 import datetime
+import copy
+import re
 
 from flask import (Flask, request, redirect, render_template, send_file,
                    session, Markup, escape)
@@ -156,7 +158,7 @@ def gen_token(table=None, field=None):
 
 
 def user_asdict(user):
-    user_dict = user.__dict__
+    user_dict = copy.copy(user.__dict__)
 
     user_dict.pop("_sa_instance_state")
     user_dict.pop("email")
@@ -169,6 +171,15 @@ def user_asdict(user):
     user_dict.pop("ban_expiry")
 
     return user_dict
+
+
+def app_asdict(app):
+    app_dict = copy.copy(app.__dict__)
+
+    app_dict.pop("_sa_instance_state")
+    app_dict.pop("secret")
+
+    return app_dict
 
 
 def json_key(key,
@@ -356,7 +367,7 @@ def auth(redirect_url: str = None, redirect_back: str = None):
         @wraps(f)
         @session_key("token", 109, 109, required=False)
         @args_key("response_type", required=False)
-        @args_key("app_id", 10, 10, int, required=False)
+        @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):
             if not token:
                 if redirect_url:
@@ -387,7 +398,7 @@ def auth(redirect_url: str = None, redirect_back: str = None):
                     else:
                         return redirect(redirect_url, 302)
                 else:
-                    return {"text": "Account does not exist!",
+                    return {"text": "Token does not exist!",
                             "error": "invalid_token"}, 401
 
             elif account.banned:
@@ -414,7 +425,7 @@ def no_auth(redirect_url: str = None):
         @wraps(f)
         @session_key("token", 109, 109, required=False)
         @args_key("response_type", required=False)
-        @args_key("app_id", 10, 10, int, required=False)
+        @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):
             account = User.query.filter_by(token=token).first()
             if account:

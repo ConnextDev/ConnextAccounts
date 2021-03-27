@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from utils import (os, werkzeug, jwt, time,
+from utils import (os, werkzeug, jwt, time, re,
 
                    request, redirect, render_template, send_file, session,
                    Markup, secure_filename, escape,
@@ -17,8 +17,8 @@ from utils import (os, werkzeug, jwt, time,
                    User, App, AppUser, IP,
 
                    email_send, gen_id, gen_token, json_key, args_key,
-                   user_asdict, session_key, captcha2, captcha3, auth,
-                   no_auth, ratelimit)
+                   user_asdict, app_asdict, session_key, captcha2, captcha3,
+                   auth, no_auth, ratelimit)
 
 
 # Error Handler
@@ -94,27 +94,64 @@ def media_handler(file):
 # Templates
 
 
+@flask.route("/")
+def html_index():
+    return render_template("unfinished.html"), 404
+
+
+@flask.route("/account")
+@auth("/login")
+def html_account(account):
+    return render_template("unfinished.html"), 404
+
+
+@flask.route("/developer")
+@auth("/login", "developer")
+def html_developer(account):
+    return render_template("unfinished.html"), 404
+
+
+@flask.route("/moderator")
+@auth("/login", "moderator")
+def html_moderator(account):
+    if not account.permission >= 1:
+        return render_template("forbidden.html",
+                               error="You are not a moderator!"), 403
+
+    return render_template("unfinished.html"), 404
+
+
+@flask.route("/admin")
+@auth("/login", "admin")
+def html_admin(account):
+    if not account.permission >= 2:
+        return render_template("forbidden.html",
+                               error="You are not an admin!"), 403
+
+    return render_template("unfinished.html"), 404
+
+
 @flask.route("/register")
 @no_auth("/account")
-def register():
+def html_register():
     return render_template("register.html")
 
 
 @flask.route("/register/resend")
 @no_auth("/account")
-def register_resend():
+def html_register_resend():
     return render_template("register_resend.html")
 
 
 @flask.route("/verify")
 @no_auth("/account")
-def verify():
+def html_verify():
     return render_template("verify.html")
 
 
 @flask.route("/login")
 @no_auth("/account")
-def login():
+def html_login():
     return render_template("login.html")
 
 
@@ -130,14 +167,14 @@ def logout(account):
 
 
 @flask.route("/403")
-def forbidden():
+def html_forbidden():
     return render_template("forbidden.html",
                            error="Be proud of yourself, "
-                                 + "you did nothing wrong!"), 404
+                                 + "you did nothing wrong!"), 403
 
 
 @flask.route("/404")
-def not_found():
+def html_not_found():
     return render_template("not_found.html",
                            error="Be proud of yourself, "
                                  + "you did nothing wrong!"), 404
@@ -164,6 +201,11 @@ def api_register(name, email, password):
         if ip.address == user["ip"]:
             return {"text": "You are being ratelimited!",
                     "error": "ratelimit"}, 429
+
+    if not re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
+                     email):
+
+        return {"text": "Invalid email!", "error": "invalid_email"}, 400
 
     if User.query.filter_by(name=name).first():
         return {"text": "Username already exists!",
@@ -216,7 +258,7 @@ def api_register(name, email, password):
 
     session["recovery_token"] = recovery_token
 
-    return {"text": f"Account {name} created.",
+    return {"text": f"Account '{name}' created.",
             "account": user_asdict(User.query.filter_by(id=id).first())}, 200
 
 
@@ -225,16 +267,21 @@ def api_register(name, email, password):
 @no_auth()
 @captcha3
 @session_key("recovery_token", 256, 256)
-@json_key("email", 8, 64)
+@json_key("email", 6, 64)
 def api_register_resend(recovery_token, email):
     account = User.query.filter_by(recovery_token=recovery_token).first()
     if not account:
-        return {"text": "Account does not exist!",
+        return {"text": "Recovery token does not exist!",
                 "error": "invalid_recovery_token"}, 401
 
     elif account.banned:
         return {"text": "Account is banned!",
                 "error": "account_banned"}, 403
+
+    if not re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
+                     email):
+
+        return {"text": "Invalid email!", "error": "invalid_email"}, 400
 
     email_account = User.query.filter(db.func.lower(User.email)
                                       == db.func.lower(email)).first()
@@ -266,7 +313,7 @@ def api_register_resend(recovery_token, email):
 
     email_send(email, subject, body)
 
-    return {"text": f"Email sent to {email}.",
+    return {"text": f"Email sent to '{email}'.",
             "account": user_asdict(account)}, 200
 
 
@@ -283,7 +330,7 @@ def api_verify(verify_token):
             account.verified = True
             db.session.commit()
 
-            return {"text": f"Verified account for {account.name}.",
+            return {"text": f"Verified account for '{account.name}'.",
                     "account": user_asdict(account)}, 200
 
     return {"text": ("Verification token does not exist! "
@@ -299,10 +346,15 @@ def api_verify(verify_token):
 @flask.route("/api/login", methods=["POST"])
 @ratelimit
 @no_auth()
-@captcha3
-@json_key("email", 8, 64)
+# @captcha3
+@json_key("email", 6, 64)
 @json_key("password", 8, 256)
 def api_login(email, password):
+    if not re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
+                     email):
+
+        return {"text": "Invalid email!", "error": "invalid_email"}, 400
+
     account = User.query.filter(db.func.lower(User.email)
                                 == db.func.lower(email)).first()
 
@@ -331,7 +383,7 @@ def api_login(email, password):
 
         session["token"] = account.token
 
-        return {"text": f"Logged in as {account.name}.",
+        return {"text": f"Logged in as '{account.name}'.",
                 "account": user_asdict(account)}, 200
 
     else:
@@ -345,7 +397,7 @@ def api_login(email, password):
 
 
 @flask.route("/api/account")
-@auth("/login", "/api/account")
+@auth("/login", "api/account")
 def api_account(account):
     return user_asdict(account), 200
 
@@ -389,7 +441,7 @@ def api_users_id(id):
 
 
 @flask.route("/api/users")
-@auth("/login", "/api/users")
+@auth("/login", "api/users")
 def api_users(account):
     if account.permission < 2:
         return {"text": "Insufficient permissions!"}, 403
@@ -403,8 +455,8 @@ def api_users(account):
 
 @flask.route("/api/users/<int:id>/set/owner", methods=["POST"])
 @ratelimit
-@captcha3
-@json_key("owner_token")
+# @captcha3
+@json_key("owner_token", 256, 256)
 def api_set_owner(id, owner_token):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -443,14 +495,14 @@ def api_set_owner(id, owner_token):
     user.permission = 3
     db.session.commit()
 
-    return {"text": f"Gave {user.name} owner access.",
+    return {"text": f"Gave '{user.name}' owner access.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/set/admin", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 def api_set_admin(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -491,14 +543,14 @@ def api_set_admin(account, id):
     user.permission = 2
     db.session.commit()
 
-    return {"text": f"Gave {user.name} administrator access.",
+    return {"text": f"Gave '{user.name}' administrator access.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/set/mod", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 def api_set_mod(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -541,14 +593,14 @@ def api_set_mod(account, id):
     user.permission = 1
     db.session.commit()
 
-    return {"text": f"Gave {user.name} moderator access.",
+    return {"text": f"Gave '{user.name}' moderator access.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/set/member", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 def api_set_member(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -589,14 +641,14 @@ def api_set_member(account, id):
     user.permission = 0
     db.session.commit()
 
-    return {"text": f"Gave {user.name} member access.",
+    return {"text": f"Gave '{user.name}' member access.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/temp/ban", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("reason", 1, 200)
 def api_temp_ban(account, id, reason):
     if not account.permission >= 1:
@@ -622,14 +674,14 @@ def api_temp_ban(account, id, reason):
     user.ban_reason = reason
     db.session.commit()
 
-    return {"text": f"Temporarily banned {user.name}.",
+    return {"text": f"Temporarily banned '{user.name}'.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/ban", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("reason", 1, 200)
 def api_ban(account, id, reason):
     if not account.permission >= 1:
@@ -659,14 +711,14 @@ def api_ban(account, id, reason):
 
     db.session.commit()
 
-    return {"text": f"Banned {user.name}.",
+    return {"text": f"Banned '{user.name}'.",
             "user": user_asdict(user)}, 200
 
 
 @flask.route("/api/users/<int:id>/unban", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("reason", 1, 200)
 def api_unban(account, id, reason):
     if not account.permission >= 2:
@@ -690,12 +742,9 @@ def api_unban(account, id, reason):
     user.ban_expiry = None
     user.ban_reason = None
 
-    for app in AppUser.query.filter_by(id=user.id).all():
-        app.delete()
-
     db.session.commit()
 
-    return {"text": f"Unbanned {user.name}.",
+    return {"text": f"Unbanned '{user.name}'.",
             "user": user_asdict(user)}, 200
 
 
@@ -705,12 +754,12 @@ def api_unban(account, id, reason):
 @flask.route("/oauth/authorize")
 @auth("/login")
 @args_key("response_type")
-@args_key("app_id", 10, 10, int)
+@args_key("app_id", 12, 12, int)
 def oauth_authorize(account, response_type, app_id):
     if response_type == "token":
         app = App.query.filter_by(id=app_id).first()
         if not app:
-            return render_template("notfound.html",
+            return render_template("not_found.html",
                                    error="App does not exist!"), 404
 
         elif not app.approved:
@@ -724,8 +773,9 @@ def oauth_authorize(account, response_type, app_id):
             return redirect(app.callback + f"#token={app_user.token}")
 
         return render_template("oauth_authorize.html",
-                               app=Markup(app),
-                               name=account.name)
+                               app=app_asdict(app),
+                               owner=user_asdict(app.owner),
+                               account=user_asdict(account))
 
     else:
         return {"text": "Response type not supported!",
@@ -734,7 +784,7 @@ def oauth_authorize(account, response_type, app_id):
 
 @flask.route("/oauth/deauthorize", methods=["POST"])
 @auth("/login")
-@json_key("app_id", 10, 10, int)
+@json_key("app_id", 12, 12, int)
 def oauth_deauthorize(account, app_id):
     app = App.query.filter_by(id=app_id).first()
     if not app:
@@ -750,20 +800,16 @@ def oauth_deauthorize(account, app_id):
     app_user.delete()
     db.session.commit()
 
-    app_dict = app.__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"Deauthorized app {app.name}.", "app": app_dict}, 200
+    return {"text": f"Deauthorized app '{app.name}'.",
+            "app": app_asdict(app)}, 200
 
 
 @flask.route("/oauth/register", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("response_type")
-@json_key("app_id", 10, 10, int)
+@json_key("app_id", 12, 12, int)
 def oauth_register(account, response_type, app_id):
     if response_type == "token":
         app = App.query.filter_by(id=app_id).first()
@@ -785,13 +831,13 @@ def oauth_register(account, response_type, app_id):
                            app.secret,
                            algorithm="HS256")
 
-        db.session.add(AppUser(user_id=account.id,
-                               id=app.id,
+        db.session.add(AppUser(app_id=app.id,
+                               id=account.id,
                                token=token))
 
         db.session.commit()
 
-        subject = "New App"
+        subject = "App Added"
         ip = IP(request.headers.get('CF-Connecting-IP'))
         body = (f"Hello {escape(account.name)}!\n\n"
                 f"The app {escape(app.name)} was added to your account!\n\n"
@@ -801,7 +847,7 @@ def oauth_register(account, response_type, app_id):
 
         email_send(account.email, subject, body)
 
-        return {"text": f"Token created for {account.name}.",
+        return {"text": f"Token created for '{account.name}'.",
                 "token": token, "account": user_asdict(account)}, 200
     else:
         return {"text": "Response type not supported!",
@@ -844,7 +890,7 @@ def oauth_user(token):
 @flask.route("/api/apps/create", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("callback", 8, 128)
 @json_key("name", 1, 32)
 @json_key("website", 8, 32)
@@ -856,8 +902,7 @@ def api_apps_create(account, callback, name, website):
     if callback[:7] != "http://" and callback[:8] != "https://":
         callback = "https://" + callback
 
-    if website[:7] != "http://" and website[:8] != "https://":
-        website = "https://" + website
+    website.replace("http://", "").replace("https://", "")
 
     db.session.add(App(id=id,
                        owner_id=account.id,
@@ -870,18 +915,14 @@ def api_apps_create(account, callback, name, website):
 
     db.session.commit()
 
-    app_dict = App.query.filter_by(id=id).first().__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"App {name} created.", "app": app_dict}, 200
+    return {"text": f"App '{name}' created.",
+            "app": app_asdict(App.query.filter_by(id=id).first())}, 200
 
 
 @flask.route("/api/apps/<int:id>/update", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 @json_key("callback", 8, 128, required=False)
 @json_key("name", 1, 32, required=False)
 @json_key("website", 8, 32, required=False)
@@ -917,8 +958,7 @@ def api_apps_update(account, id, callback, name, website):
     if callback[:7] != "http://" and callback[:8] != "https://":
         callback = "https://" + callback
 
-    if website[:7] != "http://" and website[:8] != "https://":
-        website = "http://" + website
+    website.replace("http://", "").replace("https://", "")
 
     if callback:
         app.callback = callback
@@ -931,18 +971,14 @@ def api_apps_update(account, id, callback, name, website):
 
     db.session.commit()
 
-    app_dict = App.query.filter_by(id=id).first().__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"App {app.name} updated.", "app": app_dict}, 200
+    return {"text": f"App '{app.name}' updated.",
+            "app": app_asdict(app)}, 200
 
 
 @flask.route("/api/apps/<int:id>/delete", methods=["POST"])
 @ratelimit
 @auth()
-@captcha3
+# @captcha3
 def api_apps_delete(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -975,12 +1011,7 @@ def api_apps_delete(account, id):
     app.delete()
     db.session.commit()
 
-    app_dict = App.query.filter_by(id=id).first().__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"App {app.name} deleted.", "app": app_dict}, 200
+    return {"text": f"App '{app.name}' deleted.", "app": app_asdict(app)}, 200
 
 
 # Admin
@@ -989,12 +1020,12 @@ def api_apps_delete(account, id):
 @flask.route("/api/apps")
 @auth()
 def api_apps(account):
-    if account.permission < 2:
+    if not account.permission >= 2:
         return {"text": "Insufficient permissions!"}, 403
 
     apps = []
     for app in App.query.all():
-        app_dict = app.__dict__
+        app_dict = app_asdict(app)
 
         app_dict.pop("_sa_instance_state")
         app_dict.pop("secret")
@@ -1036,12 +1067,8 @@ def api_apps_approve(account, id):
     app.approved = True
     db.session.commit()
 
-    app_dict = App.query.filter_by(id=id).first().__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"App {app.name} approved.", "app": app_dict}, 200
+    return {"text": f"App '{app.name}' approved.",
+            "app": app_asdict(app)}, 200
 
 
 @flask.route("/api/apps/<int:id>/verify", methods=["POST"])
@@ -1077,12 +1104,8 @@ def api_apps_verify(account, id):
     app.verified = True
     db.session.commit()
 
-    app_dict = App.query.filter_by(id=id).first().__dict__
-
-    app_dict.pop("_sa_instance_state")
-    app_dict.pop("secret")
-
-    return {"text": f"App {app.name} verified.", "app": app_dict}, 200
+    return {"text": f"App '{app.name}' verified.",
+            "app": app_asdict(app)}, 200
 
 
 # Thanks for using Connext Accounts!

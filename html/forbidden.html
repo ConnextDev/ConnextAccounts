@@ -29,6 +29,9 @@ body, html {
     color: #EEE;
 
     background-color: rgba(43, 43, 43);
+    background-image: url("/media/bg.webp");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 
     scrollbar-width: none;
 }
@@ -41,6 +44,19 @@ a {
     text-decoration: none;
     color: #00c3ff;
     cursor: pointer;
+}
+
+#transparent {
+    height: 100vh;
+    width: 100vw;
+
+    background-color: rgba(43, 43, 43, 0.8);
+
+    position: fixed;
+}
+
+#content {
+    z-index: 1;
 }
 
 #logo {
@@ -73,6 +89,7 @@ a {
 </style>
 </head>
 <body>
+<div id="transparent"></div>
 <div id="content">
 <img src="/media/logo.webp" id="logo" alt="Logo">
 <h1 id="code">403</h1>

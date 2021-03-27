@@ -246,14 +246,24 @@ button {
 }
 </style>
 <script>
+document.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+        document.getElementById("login-button").click()
+    }
+})
+
 const query = new URLSearchParams(location.search);
 
-if (query.get("id") != undefined) {
-    window.app_id = query.get("id")
+if (query.get("redirect") != undefined) {
+    window.redirect = query.get("redirect")
 }
 
-if (query.get("type") != undefined) {
-    window.app_type = query.get("type")
+if (query.get("app_id") != undefined) {
+    window.app_id = query.get("app_id")
+}
+
+if (query.get("response_type") != undefined) {
+    window.response_type = query.get("response_type")
 }
 
 let locked = false
@@ -269,16 +279,6 @@ const unlock = async function() {
     document.getElementById("login-button").innerText = "Resend"
     document.getElementById("login-button").style.cursor = "pointer"
 }
-
-const login_code = async function() {
-    let response = await fetch("/api/login/code", {headers: {"Content-Type": "application/json", "token": localStorage.token}})
-    let data = response.json()
-    if (response.status == 200) {
-        location.href = "/account"
-    }
-}
-
-login_code()
 
 window.resend = async function(token) {
     if (locked) {
@@ -301,15 +301,7 @@ window.resend = async function(token) {
         return
     }
 
-    let code = localStorage.recovery_code
-    if (code == false) {
-        document.getElementById("error").innerText = "No recovery code!"
-        grecaptcha.reset()
-        unlock()
-        return
-    }
-
-    let json = {code: code, email: email, captcha: token}
+    let json = {email: email, captcha: token}
 
     let response = await fetch("/api/register/resend", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()
@@ -325,11 +317,16 @@ window.resend = async function(token) {
     }
 }
 const login = async function() {
-    if (window.app_type == undefined || window.app_id == undefined) {
-        location.href = "/login"
-    } else {
-        location.href = "/login?type=" + window.app_type + "&id=" + window.app_id
+    if (window.redirect != undefined) {
+        location.replace("/login?redirect=" + redirect)
     }
+    else if (window.response_type != undefined && window.app_id != undefined) {
+        location.replace("/login?response_type=" + window.response_type + "&app_id=" + window.app_id)
+    } 
+    else {
+        location.replace("/login")
+    }
+    return
 }
 </script>
 </head>
