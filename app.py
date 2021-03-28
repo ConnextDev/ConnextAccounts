@@ -231,7 +231,7 @@ def api_register(name, email, password):
                         token=token,
                         token_secret=token_secret,
                         recovery_token=recovery_token,
-                        permission=2,
+                        permission=0,
                         verified=False,
                         banned=False))
 
