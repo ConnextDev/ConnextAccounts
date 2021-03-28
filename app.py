@@ -218,10 +218,9 @@ def api_register(name, email, password):
                 "error": "email_exists"}, 403
 
     id = gen_id(1, User, "id")
-
     recovery_token = gen_token(User, "recovery_token")
-
     token_secret = gen_token(User, "token_secret")
+
     token = jwt.encode({"id": id}, token_secret, algorithm="HS256")
 
     db.session.add(User(id=id,
