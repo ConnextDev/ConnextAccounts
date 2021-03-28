@@ -43,9 +43,8 @@ flask.config["SQLALCHEMY_DATABASE_URI"] = ("mysql+pymysql://"
                                            "accounts@localhost:3306/accounts")
 
 flask.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(flask)
-
 exts = ["jpg", "png"]
+db = SQLAlchemy(flask)
 
 
 class User(db.Model):
@@ -181,6 +180,43 @@ def app_asdict(app):
     return app_dict
 
 
+def session_key(key,
+                min: int = 1,
+                max: int = 4096,
+                var_type: type = str,
+                required: bool = True):
+
+    def wrapper(f):
+        @wraps(f)
+        def wrapper_function(*args, **kwargs):
+            value = session.get(key)
+            if not value and required:
+                return {"text": f"Please specify a value for '{key}'!",
+                        "error": f"invalid_{key}"}, 400
+            elif not required:
+                value = value or None
+
+            if value:
+                if not isinstance(value, var_type):
+                    return {"text": (f"Value for '{key}' must be type "
+                                     f"{var_type.__name__}!"),
+                            "error": f"invalid_{key}"}, 400
+
+                if len(str(value)) < min:
+                    return {"text": (f"Value for '{key}' must be at least "
+                                     f"{min} characters!"),
+                            "error": f"invalid_{key}"}, 400
+
+                if len(str(value)) > max:
+                    return {"text": (f"Value for '{key}' must be at most "
+                                     f"{max} characters!"),
+                            "error": f"invalid_{key}"}, 400
+
+            return f(**{key: value}, **kwargs)
+        return wrapper_function
+    return wrapper
+
+
 def json_key(key,
              min: int = 1,
              max: int = 4096,
@@ -256,43 +292,6 @@ def args_key(key,
                         return {"text": (f"Value for '{key}' must be type "
                                          f"{var_type.__name__}!"),
                                 "error": f"invalid_{key}"}, 400
-
-                if len(str(value)) < min:
-                    return {"text": (f"Value for '{key}' must be at least "
-                                     f"{min} characters!"),
-                            "error": f"invalid_{key}"}, 400
-
-                if len(str(value)) > max:
-                    return {"text": (f"Value for '{key}' must be at most "
-                                     f"{max} characters!"),
-                            "error": f"invalid_{key}"}, 400
-
-            return f(**{key: value}, **kwargs)
-        return wrapper_function
-    return wrapper
-
-
-def session_key(key,
-                min: int = 1,
-                max: int = 4096,
-                var_type: type = str,
-                required: bool = True):
-
-    def wrapper(f):
-        @wraps(f)
-        def wrapper_function(*args, **kwargs):
-            value = session.get(key)
-            if not value and required:
-                return {"text": f"Please specify a value for '{key}'!",
-                        "error": f"invalid_{key}"}, 400
-            elif not required:
-                value = value or None
-
-            if value:
-                if not isinstance(value, var_type):
-                    return {"text": (f"Value for '{key}' must be type "
-                                     f"{var_type.__name__}!"),
-                            "error": f"invalid_{key}"}, 400
 
                 if len(str(value)) < min:
                     return {"text": (f"Value for '{key}' must be at least "
