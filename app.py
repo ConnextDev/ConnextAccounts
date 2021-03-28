@@ -156,7 +156,7 @@ def html_login():
 
 
 @flask.route("/logout")
-def logout(account):
+def logout():
     try:
         session.pop("token")
         session.pop("recovery_token")
