@@ -895,6 +895,9 @@ def oauth_user(token):
 @json_key("name", 1, 32)
 @json_key("website", 8, 32)
 def api_apps_create(account, callback, name, website):
+    if "#" in callback:
+        return {"text": "Callback must not contain #!", "error": "invalid_callback"}
+
     id = gen_id(2, App, "id")
 
     secret = gen_token(App, "secret")
@@ -945,6 +948,9 @@ def api_apps_update(account, id, callback, name, website):
         return {"text": ("Value for 'id' must be at most "
                          "12 characters!"),
                 "error": "invalid_id"}, 400
+
+    if "#" in callback:
+        return {"text": "Callback must not contain #!", "error": "invalid_callback"}
 
     app = App.query.filter_by(id=id).first()
     if not app:
@@ -1025,12 +1031,7 @@ def api_apps(account):
 
     apps = []
     for app in App.query.all():
-        app_dict = app_asdict(app)
-
-        app_dict.pop("_sa_instance_state")
-        app_dict.pop("secret")
-
-        apps.append(app_dict)
+        apps.append(app_asdict(app))
 
     return {"apps": apps}, 200
 
