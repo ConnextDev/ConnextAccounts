@@ -719,8 +719,7 @@ def api_ban(account, id, reason):
 @ratelimit
 @auth()
 # @captcha3
-@json_key("reason", 1, 200)
-def api_unban(account, id, reason):
+def api_unban(account, id):
     if not account.permission >= 2:
         return {"text": "Insufficient permissions!"}, 403
 
