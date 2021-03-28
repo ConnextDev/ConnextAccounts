@@ -1035,6 +1035,7 @@ def api_apps(account):
 
 
 @flask.route("/api/apps/<int:id>/approve", methods=["POST"])
+@ratelimit
 @auth()
 def api_apps_approve(account, id):
     if not id:
@@ -1071,6 +1072,7 @@ def api_apps_approve(account, id):
 
 
 @flask.route("/api/apps/<int:id>/verify", methods=["POST"])
+@ratelimit
 @auth()
 def api_apps_verify(account, id):
     if not id:
