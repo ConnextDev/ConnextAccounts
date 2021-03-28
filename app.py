@@ -597,11 +597,11 @@ def api_set_mod(account, id):
             "user": user_asdict(user)}, 200
 
 
-@flask.route("/api/users/<int:id>/set/member", methods=["POST"])
+@flask.route("/api/users/<int:id>/set/user", methods=["POST"])
 @ratelimit
 @auth()
 # @captcha3
-def api_set_member(account, id):
+def api_set_user(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
                 "error": "invalid_id"}, 400
@@ -641,7 +641,7 @@ def api_set_member(account, id):
     user.permission = 0
     db.session.commit()
 
-    return {"text": f"Gave '{user.name}' member access.",
+    return {"text": f"Gave '{user.name}' user access.",
             "user": user_asdict(user)}, 200
 
 
