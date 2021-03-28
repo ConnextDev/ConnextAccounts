@@ -251,9 +251,7 @@ button {
 }
 </style>
 <script>
-const query = new URLSearchParams(location.search);
-
-window.code = query.get("code")
+window.verify_token = location.href.split("#token=")[1].split("&")[0]
 
 let locked = false
 
@@ -266,7 +264,7 @@ const unlock = async function() {
 }
 
 window.onload = async function() {
-    if (window.code == undefined) {
+    if (window.verify_token == undefined) {
         document.getElementById("input").style.display = "none"
         document.getElementById("separator").style.display = "none"
         document.getElementById("error").innerText = "Invalid link!"
@@ -280,7 +278,7 @@ window.verify = async function(token) {
         lock()
     }
 
-    let json = {code: code, captcha: token}
+    let json = {verify_token: window.verify_token, captcha: token}
 
     let response = await fetch("/api/verify", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()

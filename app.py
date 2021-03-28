@@ -248,7 +248,7 @@ def api_register(name, email, password):
     body = (f"Hello {escape(name)}!\n\n"
             "Thanks for signing up with Connext! "
             "One quick thing, we need you to verify your account.\n\n"
-            f"Go to https://connext.dev/verify?code={verify_token} "
+            f"Go to https://connext.dev/verify#token={verify_token} "
             "to verify your account.\n\n"
             f"Registered at {ip.location} by {ip.address}")
 
@@ -307,7 +307,7 @@ def api_register_resend(recovery_token, email):
     body = (f"Hello {escape(account.name)}!\n\n"
             "Thanks for signing up with Connext! "
             "One quick thing, we need you to verify your account.\n\n"
-            f"Go to https://connext.dev/verify?code={verify_token} "
+            f"Go to https://connext.dev/verify#token={verify_token} "
             "to verify your account.\n\n"
             f"Registered at {ip.location} by {ip.address}")
 
