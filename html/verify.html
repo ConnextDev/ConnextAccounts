@@ -251,7 +251,12 @@ button {
 }
 </style>
 <script>
-window.verify_token = location.href.split("#token=")[1].split("&")[0]
+try {
+    window.verify_token = location.href.split("#token=")[1].split("&")[0]
+}
+catch (e) {
+    window.verify_token == undefined
+}
 
 let locked = false
 
@@ -283,6 +288,9 @@ window.verify = async function(token) {
     let response = await fetch("/api/verify", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     let data = await response.json()
     if (response.status == 200) {
+        document.getElementById("input").style.display = "none"
+        document.getElementById("separator").style.display = "none"
+        document.getElementById("login").style.display = "block"
         document.getElementById("error").innerText = "Account was verified, you can now log in."
         return
     } else {
@@ -304,6 +312,7 @@ window.verify = async function(token) {
 </div>
 <div id="input">
 <div class="g-recaptcha" data-sitekey="6Lf4a2oaAAAAAKaQVuSAubV3OajbJfSNKWg0xAun" data-callback="verify"></div>
+<h5 id="login"><a href="/login">Continue to Login</a></h5>
 </div>
 </div>
 </div>
