@@ -332,7 +332,7 @@ def args_key(key,
 
 def captcha2(f):
     @wraps(f)
-    @json_key("captcha", 462, 462)
+    @json_key("captcha")
     def wrapper_function(captcha, *args, **kwargs):
         try:
             response = requests.post(("https://www.google.com"
@@ -355,7 +355,7 @@ def captcha2(f):
 
 def captcha3(f):
     @wraps(f)
-    @json_key("captcha", 462, 462)
+    @json_key("captcha")
     def wrapper_function(captcha, *args, **kwargs):
         try:
             response = requests.post(("https://www.google.com"
@@ -382,7 +382,7 @@ def auth(required: bool = True,
 
     def wrapper(f):
         @wraps(f)
-        @session_key("token", 64, 256, required=False)
+        @session_key("token", 1, 256, required=False)
         @args_key("response_type", required=False)
         @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):
@@ -445,7 +445,7 @@ def auth(required: bool = True,
 def no_auth(redirect_url: str = None):
     def wrapper(f):
         @wraps(f)
-        @session_key("token", 64, 256, required=False)
+        @session_key("token", 1, 256, required=False)
         @args_key("response_type", required=False)
         @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):

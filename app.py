@@ -186,7 +186,7 @@ def html_not_found():
 @no_auth()
 @captcha3
 @json_key("name", 1, 32)
-@json_key("email", 6, 64)
+@json_key("email", 1, 64)
 @json_key("password", 8, 256)
 def api_register(name, email, password):
     ip = IP(request.headers.get('CF-Connecting-IP'))
@@ -266,7 +266,7 @@ def api_register(name, email, password):
 @no_auth()
 @captcha3
 @session_key("recovery_token", 256, 256)
-@json_key("email", 6, 64)
+@json_key("email", 1, 64)
 def api_register_resend(recovery_token, email):
     account = User.query.filter_by(recovery_token=recovery_token).first()
     if not account:
@@ -353,7 +353,7 @@ def api_verify(verify_token):
 @ratelimit
 @no_auth()
 # @captcha3
-@json_key("email", 6, 64)
+@json_key("email", 1, 64)
 @json_key("password", 8, 256)
 def api_login(email, password):
     if not re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)",
@@ -1044,7 +1044,7 @@ def oauth_register(account, response_type, app_id):
 
 
 @flask.route("/oauth/user")
-@args_key("token", 64, 256)
+@args_key("token", 1, 256)
 def oauth_user(token):
     app_user = AppUser.query.filter_by(token=token).first()
     if not app_user:
