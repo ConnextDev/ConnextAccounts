@@ -297,8 +297,8 @@ window.login = async function(token) {
     let json = {response_type: "token", app_id: {{app.id}}, captcha: token}
 
     let response = await fetch("/oauth/register", {method: "POST", headers: {"Content-Type": "application/json", "token": localStorage.token}, body: JSON.stringify(json)})
-    let data = await response.json()
     if (response.status == 200) {
+        let data = await response.json()
         location.replace("{{app.callback}}#token=" + data.token)
         return
     } else {

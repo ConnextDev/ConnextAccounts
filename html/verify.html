@@ -290,8 +290,8 @@ window.verify = async function(token) {
     let json = {verify_token: window.verify_token, captcha: token}
 
     let response = await fetch("/api/verify", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
-    let data = await response.json()
     if (response.status == 200) {
+        let data = await response.json()
         document.getElementById("input").style.display = "none"
         document.getElementById("separator").style.display = "none"
         document.getElementById("login").style.display = "block"

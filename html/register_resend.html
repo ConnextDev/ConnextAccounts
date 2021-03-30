@@ -304,8 +304,8 @@ window.resend = async function(token) {
     let json = {email: email, captcha: token}
 
     let response = await fetch("/api/register/resend", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
-    let data = await response.json()
     if (response.status == 200) {
+        let data = await response.json()
         document.getElementById("error").innerText = "Resent email."
         unlock()
         return

@@ -338,8 +338,8 @@ window.register = async function(token) {
     let json = {name: name, email: email, password: password, captcha: token}
 
     let response = await fetch("/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
-    let data = await response.json()
     if (response.status == 200) {
+        let data = await response.json()
         if (window.redirect != undefined) {
             location.replace("/register/resend?redirect=" + redirect)
         }
