@@ -167,6 +167,9 @@ def html_error(code):
         error = "Account is banned!"
     elif code == "account_unverified":
         error = "Account is not verified!"
+    elif code == "government_secret":
+        error = ("This page is hiding a government secret! "
+                 "I'm pretty sure aliens don't exist, pretty sure...")
     else:
         error = "There was an error! That's all we know."
 
