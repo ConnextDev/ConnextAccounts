@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Connext | Resend Email</title>
-<meta name="description" content="Resend verification email for your account on Connext Accounts">
+<title>Connext | Delete</title>
+<meta name="description" content="Delete your account on Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
 <link rel="preconnect" href="https://fonts.gstatic.com">
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <style>
 /* font stuff */
 @font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6DRAW_0.woff2) format('woff2');unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr4TRAW_0.woff2) format('woff2');unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5DRAW_0.woff2) format('woff2');unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6TRAW_0.woff2) format('woff2');unicode-range: U+1F00-1FFF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5jRAW_0.woff2) format('woff2');unicode-range: U+0370-03FF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6jRAW_0.woff2) format('woff2');unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr6zRAW_0.woff2) format('woff2');unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face {font-family: 'Noto Sans';font-style: normal;font-weight: 400;font-display: swap;src: url(https://fonts.gstatic.com/s/notosans/v11/o-0IIpQlx3QUlC5A4PNr5TRA.woff2) format('woff2');unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
@@ -244,91 +243,16 @@ button {
         width: 76vw;
     }
 }
+
+#login {
+    display: none;
+}
+
+.g-recaptcha {
+    display: flex;
+    justify-content: center;
+}
 </style>
-<script>
-document.addEventListener("keyup", function(event) {
-    if (event.keyCode == 13) {
-        document.getElementById("login-button").click()
-    }
-})
-
-const query = new URLSearchParams(location.search);
-
-if (query.get("redirect_url") != undefined) {
-    window.redirect_url = query.get("redirect")
-}
-
-if (query.get("app_id") != undefined) {
-    window.app_id = query.get("app_id")
-}
-
-if (query.get("response_type") != undefined) {
-    window.response_type = query.get("response_type")
-}
-
-let locked = false
-
-const lock = async function() {
-    locked = true
-    document.getElementById("login-button").innerText = "Resending..."
-    document.getElementById("login-button").style.cursor = "default"
-}
-
-const unlock = async function() {
-    locked = false
-    document.getElementById("login-button").innerText = "Resend"
-    document.getElementById("login-button").style.cursor = "pointer"
-}
-
-window.resend = async function(token) {
-    if (locked) {
-        return
-    } else {
-        lock()
-    }
-
-    let email = document.getElementById("email").value
-    if (email == false) {
-        document.getElementById("error").innerText = "Please specify an email!"
-        grecaptcha.reset()
-        unlock()
-        return
-    }
-    if (email.length < 5) {
-        document.getElementById("error").innerText = "Invalid email!"
-        grecaptcha.reset()
-        unlock()
-        return
-    }
-
-    let json = {email: email, captcha: token}
-
-    let response = await fetch("/api/register/resend", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
-    if (response.status == 200) {
-        let data = await response.json()
-        document.getElementById("error").innerText = "Resent email."
-        unlock()
-        return
-    } else {
-        document.getElementById("error").innerText = data.text
-        grecaptcha.reset()
-        unlock()
-        return
-    }
-}
-const login = async function() {
-    if (window.redirect_url != undefined) {
-        location.href = "/login?redirect_url=" + window.redirect_url
-    }
-    else if (window.response_type != undefined && window.app_id != undefined) {
-        location.href = "/login?response_type=" + window.response_type + "&app_id=" + window.app_id
-    } 
-    else {
-        location.href = "/login"
-    }
-    return
-}
-</script>
 </head>
 <body>
 <div id="sidebar">
@@ -339,10 +263,7 @@ const login = async function() {
 <hr id="separator">
 </div>
 <div id="input">
-<h3>Check your email for a verification link.</h3>
-<input type="text" id="email" placeholder="Email" style="margin-bottom: 2vh" autofocus>
-<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="resend" data-action="submit" style="margin-bottom: 0">Resend</button>
-<h5><a onclick="login()">Continue to Login</a></h5>
+<p>Send an email to <a href="mailto://accounts@connext.dev">accounts@connext.dev</a> with the title "Account Deletion" and we will get back to you.</p>
 </div>
 </div>
 </div>

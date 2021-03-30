@@ -340,6 +340,7 @@ def captcha2(f):
                                      data={"secret": captcha_v2,
                                            "response": captcha},
                                      timeout=5)
+
         except requests.exceptions.Timeout:
             return f(*args, **kwargs)
 
@@ -362,6 +363,7 @@ def captcha3(f):
                                      data={"secret": captcha_v3,
                                            "response": captcha},
                                      timeout=5)
+
         except requests.exceptions.Timeout:
             return f(*args, **kwargs)
 
@@ -394,7 +396,7 @@ def auth(required: bool = True,
                     else:
                         if redirect_back:
                             return redirect(redirect_url
-                                            + f"?redirect={redirect_back}",
+                                            + f"?redirect_url={redirect_back}",
                                             302)
                         else:
                             return redirect(redirect_url, 302)
@@ -529,6 +531,11 @@ def ban_expire():
                 user.banned = False
                 user.ban_expiry = None
                 user.ban_reason = None
+
+                for app_user in AppUser.query.filter_by(id=user.id).all():
+                    app_user.token = jwt.encode(user_asdict(user),
+                                                app_user.app.secret,
+                                                algorithm="HS256")
 
                 db.session.commit()
 

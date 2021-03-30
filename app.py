@@ -157,7 +157,7 @@ def html_login():
 
 @flask.route("/delete")
 def html_delete():
-    return render_template("unfinished.html"), 404
+    return render_template("delete.html")
 
 
 @flask.route("/403")
@@ -398,14 +398,18 @@ def api_login(email, password):
 
 
 @flask.route("/logout")
-def logout():
+@args_key("redirect_url")
+def logout(redirect_url):
     try:
         session.pop("token")
         session.pop("recovery_token")
     except KeyError:
         pass
 
-    return redirect("/", 302)
+    if redirect_url:
+        return redirect("/" + redirect_url, 302)
+    else:
+        return redirect("/", 302)
 
 
 # User
@@ -763,6 +767,10 @@ def api_temp_ban(account, id, reason):
                                     app_user.app.secret,
                                     algorithm="HS256")
 
+    for app in AppUser.query.filter_by(owner_id=user.id).all():
+        app.approved = False
+        app.verified = False
+
     db.session.commit()
 
     subject = "Ban Notice"
@@ -832,7 +840,13 @@ def api_ban(account, id, reason):
                             algorithm="HS256")
 
     for app_user in AppUser.query.filter_by(id=user.id).all():
-        app_user.delete()
+        app_user.token = jwt.encode(user_asdict(user),
+                                    app_user.app.secret,
+                                    algorithm="HS256")
+
+    for app in AppUser.query.filter_by(owner_id=user.id).all():
+        app.approved = False
+        app.verified = False
 
     db.session.commit()
 

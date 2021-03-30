@@ -254,8 +254,8 @@ document.addEventListener("keyup", function(event) {
 
 const query = new URLSearchParams(location.search);
 
-if (query.get("redirect") != undefined) {
-    window.redirect = query.get("redirect")
+if (query.get("redirect_url") != undefined) {
+    window.redirect_url = query.get("redirect")
 }
 
 if (query.get("app_id") != undefined) {
@@ -340,8 +340,8 @@ window.register = async function(token) {
     let response = await fetch("/api/register", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     if (response.status == 200) {
         let data = await response.json()
-        if (window.redirect != undefined) {
-            location.replace("/register/resend?redirect=" + redirect)
+        if (window.redirect_url != undefined) {
+            location.replace("/register/resend?redirect_url=" + window.redirect_url)
         }
         else if (window.response_type != undefined && window.app_id != undefined) {
             location.replace("/register/resend?response_type=" + window.response_type + "&app_id=" + window.app_id)
@@ -359,14 +359,14 @@ window.register = async function(token) {
 }
 
 const login = async function() {
-    if (window.redirect != undefined) {
-        location.replace("/login?redirect=" + redirect)
+    if (window.redirect_url != undefined) {
+        location.href = "/login?redirect_url=" + window.redirect_url
     }
     else if (window.response_type != undefined && window.app_id != undefined) {
-        location.replace("/login?response_type=" + window.response_type + "&app_id=" + window.app_id)
+        location.href = "/login?response_type=" + window.response_type + "&app_id=" + window.app_id
     } 
     else {
-        location.replace("/login")
+        location.href = "/login"
     }
     return
 }
