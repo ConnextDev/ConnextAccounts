@@ -351,6 +351,7 @@ window.register = async function(token) {
         }
         return
     } else {
+        let data = await response.json()
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
         unlock()

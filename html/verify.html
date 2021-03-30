@@ -298,6 +298,7 @@ window.verify = async function(token) {
         document.getElementById("error").innerText = "Account was verified, you can now log in."
         return
     } else {
+        let data = await response.json()
         document.getElementById("error").innerHTML = data.text
         grecaptcha.reset()
         unlock()

@@ -310,6 +310,7 @@ window.resend = async function(token) {
         unlock()
         return
     } else {
+        let data = await response.json()
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
         unlock()

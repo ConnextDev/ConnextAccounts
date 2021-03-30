@@ -302,6 +302,7 @@ window.login = async function(token) {
         location.replace("{{app.callback}}#token=" + data.token)
         return
     } else {
+        let data = await response.json()
         document.getElementById("error").innerText = data.text
         grecaptcha.reset()
         unlock()
