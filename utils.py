@@ -51,8 +51,8 @@ class User(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String(32), unique=True, nullable=False)
     email = db.Column(db.String(64), unique=True, nullable=False)
-    password = db.Column(db.String(94), nullable=False)
-    token = db.Column(db.String(109), unique=True, nullable=False)
+    password = db.Column(db.String(256), nullable=False)
+    token = db.Column(db.String(256), unique=True, nullable=False)
     token_secret = db.Column(db.String(256), unique=True, nullable=False)
     twofa_secret = db.Column(db.String(256), unique=True)
     recovery_token = db.Column(db.String(256), unique=True)
@@ -61,6 +61,17 @@ class User(db.Model):
     banned = db.Column(db.Boolean, nullable=False)
     ban_expiry = db.Column(db.BigInteger)
     ban_reason = db.Column(db.String(200))
+
+
+"""
+class UserRelationship(db.Model):
+    user_id = db.Column(db.BigInteger, db.ForeignKey(User.id), nullable=False)
+    id = db.Column(db.BigInteger, db.ForeignKey(User.id), primary_key=True)
+    status = db.Column(db.Integer, nullable=False)
+
+    user = db.relationship("User", foreign_keys="UserRelationship.user_id")
+    recipient = db.relationship("User", foreign_keys="UserRelationship.id")
+"""
 
 
 class App(db.Model):
@@ -79,7 +90,7 @@ class App(db.Model):
 class AppUser(db.Model):
     app_id = db.Column(db.BigInteger, db.ForeignKey(App.id), nullable=False)
     id = db.Column(db.BigInteger, db.ForeignKey(User.id), primary_key=True)
-    token = db.Column(db.String(165), unique=True, nullable=False)
+    token = db.Column(db.String(256), unique=True, nullable=False)
 
     user = db.relationship("User", foreign_keys="AppUser.id")
     app = db.relationship("App", foreign_keys="AppUser.app_id")
@@ -155,7 +166,7 @@ def gen_token(table=None, field=None):
     return token
 
 
-def user_asdict(user):
+def user_asdict(user, deep=False):
     user_dict = copy.copy(user.__dict__)
 
     user_dict.pop("_sa_instance_state")
@@ -168,6 +179,15 @@ def user_asdict(user):
     user_dict.pop("ban_reason")
     user_dict.pop("ban_expiry")
 
+    if deep:
+        user_dict["apps"] = {"own": [], "use": []}
+
+        for app in App.query.filter_by(owner_id=user.id).all():
+            user_dict["apps"]["own"].append(app_asdict(app))
+
+        for app_user in AppUser.query.filter_by(id=user.id).all():
+            user_dict["apps"]["use"].append(app_asdict(app_user.app))
+
     return user_dict
 
 
@@ -176,6 +196,8 @@ def app_asdict(app):
 
     app_dict.pop("_sa_instance_state")
     app_dict.pop("secret")
+
+    app_dict["owner"] = user_asdict(app.owner)
 
     return app_dict
 
@@ -310,20 +332,16 @@ def args_key(key,
 
 def captcha2(f):
     @wraps(f)
-    def wrapper_function(*args, **kwargs):
-        json = request.json
-        if not json:
-            return {"text": "Bad request!", "error": "bad_request"}, 400
-
-        captcha = request.json.get("captcha")
-        if not captcha:
-            return {"text": "Please specify a value for 'captcha'!",
-                    "error": "invalid_captcha"}, 400
-
-        response = requests.post(("https://www.google.com"
-                                  "/recaptcha/api/siteverify"),
-                                 data={"secret": captcha_v2,
-                                       "response": captcha})
+    @json_key("captcha", 462, 462)
+    def wrapper_function(captcha, *args, **kwargs):
+        try:
+            response = requests.post(("https://www.google.com"
+                                     "/recaptcha/api/siteverify"),
+                                     data={"secret": captcha_v2,
+                                           "response": captcha},
+                                     timeout=5)
+        except requests.exceptions.Timeout:
+            return f(*args, **kwargs)
 
         data = response.json()
         if not data["success"]:
@@ -336,20 +354,16 @@ def captcha2(f):
 
 def captcha3(f):
     @wraps(f)
-    def wrapper_function(*args, **kwargs):
-        json = request.json
-        if not json:
-            return {"text": "Bad request!", "error": "bad_request"}, 400
-
-        captcha = request.json.get("captcha")
-        if not captcha:
-            return {"text": "Please specify a value for 'captcha'!",
-                    "error": "invalid_captcha"}, 400
-
-        response = requests.post(("https://www.google.com"
-                                  "/recaptcha/api/siteverify"),
-                                 data={"secret": captcha_v3,
-                                       "response": captcha})
+    @json_key("captcha", 462, 462)
+    def wrapper_function(captcha, *args, **kwargs):
+        try:
+            response = requests.post(("https://www.google.com"
+                                     "/recaptcha/api/siteverify"),
+                                     data={"secret": captcha_v3,
+                                           "response": captcha},
+                                     timeout=5)
+        except requests.exceptions.Timeout:
+            return f(*args, **kwargs)
 
         data = response.json()
         if not data["success"]:
@@ -360,14 +374,17 @@ def captcha3(f):
     return wrapper_function
 
 
-def auth(redirect_url: str = None, redirect_back: str = None):
+def auth(required: bool = True,
+         redirect_url: str = None,
+         redirect_back: str = None):
+
     def wrapper(f):
         @wraps(f)
-        @session_key("token", 109, 109, required=False)
+        @session_key("token", 64, 256, required=False)
         @args_key("response_type", required=False)
         @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):
-            if not token:
+            if not token and required:
                 if redirect_url:
                     if response_type and app_id:
                         return redirect(redirect_url
@@ -385,8 +402,12 @@ def auth(redirect_url: str = None, redirect_back: str = None):
                     return {"text": "Please specify a value for 'token'!",
                             "error": "invalid_token"}, 400
 
-            account = User.query.filter_by(token=token).first()
-            if not account:
+            if token:
+                account = User.query.filter_by(token=token).first()
+            else:
+                account = None
+
+            if not account and required:
                 if redirect_url:
                     if response_type and app_id:
                         return redirect(redirect_url
@@ -399,19 +420,20 @@ def auth(redirect_url: str = None, redirect_back: str = None):
                     return {"text": "Token does not exist!",
                             "error": "invalid_token"}, 401
 
-            elif account.banned:
-                if not redirect_url:
-                    return {"text": "Account is banned!",
-                            "error": "account_banned"}, 403
-                else:
-                    return redirect("/error?code=account_banned", 302)
+            if account:
+                if account.banned:
+                    if not redirect_url:
+                        return {"text": "Account is banned!",
+                                "error": "account_banned"}, 403
+                    else:
+                        return redirect("/error?code=account_banned", 302)
 
-            elif not account.verified:
-                if not redirect_url:
-                    return {"text": "Account is not verified!",
-                            "error": "account_unverified"}, 403
-                else:
-                    return redirect("/error?code=account_unverified", 302)
+                elif not account.verified:
+                    if not redirect_url:
+                        return {"text": "Account is not verified!",
+                                "error": "account_unverified"}, 403
+                    else:
+                        return redirect("/error?code=account_unverified", 302)
 
             return f(**{"account": account}, **kwargs)
         return wrapper_function
@@ -421,7 +443,7 @@ def auth(redirect_url: str = None, redirect_back: str = None):
 def no_auth(redirect_url: str = None):
     def wrapper(f):
         @wraps(f)
-        @session_key("token", 109, 109, required=False)
+        @session_key("token", 64, 256, required=False)
         @args_key("response_type", required=False)
         @args_key("app_id", 12, 12, int, required=False)
         def wrapper_function(token, response_type, app_id, *args, **kwargs):
@@ -507,7 +529,18 @@ def ban_expire():
                 user.banned = False
                 user.ban_expiry = None
                 user.ban_reason = None
+
                 db.session.commit()
+
+                subject = "Ban Notice"
+                body = (f"Hello {escape(user.name)}!\n\n"
+                        "Your account was unbanned.\n\n"
+                        "Please read our Terms of Service and "
+                        "refer to your ban reason to avoid future bans"
+                        "We hope you understand. Thanks for using Connext!")
+
+                email_send(user.email, subject, body)
+
         time.sleep(1800)
 
 
