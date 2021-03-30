@@ -14,7 +14,7 @@ from utils import (os, werkzeug, jwt, time, re,
 
                    flask, db, exts,
 
-                   User, UserRelationship, App, AppUser, IP,
+                   User, App, AppUser, IP,
 
                    email_send, gen_id, gen_token, json_key, args_key,
                    user_asdict, app_asdict, session_key, captcha2, captcha3,
