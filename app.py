@@ -416,7 +416,7 @@ def api_login(email, password):
 
 
 @flask.route("/logout")
-@args_key("redirect_url")
+@args_key("redirect_url", required=False)
 def logout(redirect_url):
     try:
         session.pop("token")
