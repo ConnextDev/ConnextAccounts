@@ -494,36 +494,7 @@ def ratelimit(f):
         return f(*args, **kwargs)
     return wrap
 
-
-def verify_expire():
-    while 1:
-        for verification in verify_cache:
-            if verification["expires"] > 0:
-                verification["expires"] -= 10
-            else:
-                verify_cache.remove(verification)
-            time.sleep(10)
-
-
-def ratelimit_expire():
-    while 1:
-        for user in ratelimit_cache:
-            if user["time"] > 0:
-                user["time"] -= 0.5
-            time.sleep(0.5)
-
-
-def register_expire():
-    while 1:
-        for user in register_cache:
-            if user["time"] > 0:
-                user["time"] -= 10
-            else:
-                register_cache.remove(user)
-            time.sleep(10)
-
-
-def ban_expire():
+def tasks():
     while 1:
         timestamp = time.time()
         for user in User.query.filter_by(banned=True).all():
@@ -548,12 +519,24 @@ def ban_expire():
 
                 email_send(user.email, subject, body)
 
-        time.sleep(1800)
+        for user in register_cache:
+            if user["time"] > 0:
+                user["time"] -= 1
+            else:
+                register_cache.remove(user)
+
+        for user in ratelimit_cache:
+            if user["time"] > 0:
+                user["time"] -= 1
+
+        for verification in verify_cache:
+            if verification["expires"] > 0:
+                verification["expires"] -= 1
+            else:
+                verify_cache.remove(verification)
+
+        time.sleep(1)
 
 
-threads.append(threading.Thread(target=verify_expire))
-threads.append(threading.Thread(target=ratelimit_expire))
-threads.append(threading.Thread(target=register_expire))
-threads.append(threading.Thread(target=ban_expire))
-for thread in threads:
-    thread.start()
+task_thread = threading.Thread(target=tasks)
+task_thread.start()
