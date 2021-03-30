@@ -255,7 +255,7 @@ document.addEventListener("keyup", function(event) {
 const query = new URLSearchParams(location.search);
 
 if (query.get("redirect_url") != undefined) {
-    window.redirect_url = query.get("redirect")
+    window.redirect_url = query.get("redirect_url")
 }
 
 if (query.get("app_id") != undefined) {

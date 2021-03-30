@@ -160,6 +160,19 @@ def html_delete():
     return render_template("delete.html")
 
 
+@flask.route("/error")
+@args_key("code", required=False)
+def html_error(code):
+    if code == "account_banned":
+        error = "Account is banned!"
+    elif code == "account_unverified":
+        error = "Account is not verified!"
+    else:
+        error = "There was an error! That's all we know."
+
+    return render_template("error.html", error=error)
+
+
 @flask.route("/403")
 def html_forbidden():
     return render_template("forbidden.html",
@@ -324,6 +337,7 @@ def api_register_resend(recovery_token, email):
 @json_key("verify_token", 256, 256)
 def api_verify(verify_token):
     for verification in verify_cache:
+        print(verification)
         if verify_token == verification["verify_token"]:
             account = User.query.filter_by(id=verification["id"]).first()
             account.recovery_token = None
