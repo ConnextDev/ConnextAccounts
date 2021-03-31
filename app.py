@@ -38,12 +38,12 @@ def handle_unauthorized(e):
 
 @flask.errorhandler(werkzeug.exceptions.Forbidden)
 def handle_forbidden(e):
-    return render_template("forbidden.html", error=""), 403
+    return render_template("errors/forbidden.html", error=""), 403
 
 
 @flask.errorhandler(werkzeug.exceptions.NotFound)
 def handle_not_found(e):
-    return render_template("not_found.html", error=""), 404
+    return render_template("errors/not_found.html", error=""), 404
 
 
 @flask.errorhandler(werkzeug.exceptions.MethodNotAllowed)
@@ -96,39 +96,49 @@ def media_handler(file):
 
 @flask.route("/")
 def html_index():
-    return render_template("unfinished.html"), 404
+    return render_template("errors/unfinished.html"), 404
 
 
 @flask.route("/account")
 @auth(True, "/login")
 def html_account(account):
-    return render_template("unfinished.html"), 404
+    return render_template("errors/unfinished.html"), 404
 
 
 @flask.route("/developer")
 @auth(True, "/login", "developer")
 def html_developer(account):
-    return render_template("unfinished.html"), 404
+    # return render_template("developer/home.html")
+
+    return render_template("errors/unfinished.html"), 404
+
+@flask.route("/developer/apps")
+@auth(True, "/login", "developer/apps")
+def html_developer_apps(account):
+    # return render_template("developer/apps.html",
+    #                        account=user_asdict(account, True))
+
+    return render_template("errors/unfinished.html"), 404
 
 
 @flask.route("/moderator")
 @auth(True, "/login", "moderator")
 def html_moderator(account):
     if not account.permission >= 1:
-        return render_template("forbidden.html",
+        return render_template("errors/forbidden.html",
                                error="You are not a moderator!"), 403
 
-    return render_template("unfinished.html"), 404
+    return render_template("errors/unfinished.html"), 404
 
 
 @flask.route("/admin")
 @auth(True, "/login", "admin")
 def html_admin(account):
     if not account.permission >= 2:
-        return render_template("forbidden.html",
+        return render_template("errors/forbidden.html",
                                error="You are not an admin!"), 403
 
-    return render_template("unfinished.html"), 404
+    return render_template("errors/unfinished.html"), 404
 
 
 @flask.route("/register")
@@ -174,19 +184,19 @@ def html_error(code):
     else:
         error = "There was an error! That's all we know."
 
-    return render_template("error.html", error=error)
+    return render_template("errors/error.html", error=error)
 
 
 @flask.route("/403")
 def html_forbidden():
-    return render_template("forbidden.html",
+    return render_template("errors/forbidden.html",
                            error="Be proud of yourself, "
                                  + "you did nothing wrong!"), 403
 
 
 @flask.route("/404")
 def html_not_found():
-    return render_template("not_found.html",
+    return render_template("errors/not_found.html",
                            error="Be proud of yourself, "
                                  + "you did nothing wrong!"), 404
 
@@ -990,11 +1000,11 @@ def oauth_authorize(account, response_type, app_id):
     if response_type == "token":
         app = App.query.filter_by(id=app_id).first()
         if not app:
-            return render_template("not_found.html",
+            return render_template("errors/not_found.html",
                                    error="App does not exist!"), 404
 
         elif not app.approved:
-            return render_template("forbidden.html",
+            return render_template("errors/forbidden.html",
                                    error="App isn't approved!"), 403
 
         app_user = AppUser.query.filter_by(app_id=app.id,
@@ -1174,7 +1184,7 @@ def api_apps_create(account, callback, name, website):
     if callback[:7] != "http://" and callback[:8] != "https://":
         callback = "https://" + callback
 
-    website.replace("http://", "").replace("https://", "")
+    website = website.replace("http://", "").replace("https://", "")
 
     db.session.add(App(id=id,
                        owner_id=account.id,
@@ -1235,7 +1245,7 @@ def api_apps_update(account, id, callback, name, website):
     if callback[:7] != "http://" and callback[:8] != "https://":
         callback = "https://" + callback
 
-    callback.replace("http://", "").replace("https://", "")
+    website = website.replace("http://", "").replace("https://", "")
 
     if callback:
         app.callback = callback
