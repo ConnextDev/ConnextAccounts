@@ -245,10 +245,6 @@ button {
     }
 }
 
-#login {
-    display: none;
-}
-
 .g-recaptcha {
     display: flex;
     justify-content: center;
@@ -294,11 +290,13 @@ window.verify = async function(token) {
         let data = await response.json()
         document.getElementById("input").style.display = "none"
         document.getElementById("separator").style.display = "none"
-        document.getElementById("login").style.display = "block"
+        document.getElementById("login").innerHTML = "<a href='/login'>Continue to Login</a>"
         document.getElementById("error").innerText = "Account was verified, you can now log in."
         return
     } else {
         let data = await response.json()
+        document.getElementById("input").style.display = "none"
+        document.getElementById("separator").style.display = "none"
         document.getElementById("error").innerHTML = data.text
         grecaptcha.reset()
         unlock()
@@ -318,7 +316,7 @@ window.verify = async function(token) {
 <div id="input">
 <div class="g-recaptcha" data-sitekey="6Lf4a2oaAAAAAKaQVuSAubV3OajbJfSNKWg0xAun" data-callback="verify"></div>
 </div>
-<h5 id="login"><a href="/login">Continue to Login</a></h5>
+<h5 id='login'><a href='/register/resend'>Resend Email</a></h5>
 </div>
 </div>
 </body>

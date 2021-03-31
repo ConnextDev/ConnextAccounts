@@ -480,19 +480,21 @@ def ratelimit(f):
     def wrap(*args, **kwargs):
         ip = IP(request.headers.get("CF-Connecting-IP"))
 
+        timestamp = time.time()
         for user in ratelimit_cache:
             if ip.address == user["ip"]:
-                if user["time"] > 0:
+                if user["timestamp"] > timestamp:
                     return {"text": "You are being ratelimited!",
                             "error": "ratelimit"}, 429
                 else:
-                    user["time"] = 3
+                    user["timestamp"] = timestamp + 3
                     return f(*args, **kwargs)
 
-        ratelimit_cache.append({"ip": ip.address, "time": 3})
+        ratelimit_cache.append({"ip": ip.address, "timestamp": timestamp + 3})
 
         return f(*args, **kwargs)
     return wrap
+
 
 def tasks():
     while 1:
@@ -514,28 +516,12 @@ def tasks():
                 body = (f"Hello {escape(user.name)}!\n\n"
                         "Your account was unbanned.\n\n"
                         "Please read our Terms of Service and "
-                        "refer to your ban reason to avoid future bans"
+                        "refer to your ban reason to avoid future bans.\n\n"
                         "We hope you understand. Thanks for using Connext!")
 
                 email_send(user.email, subject, body)
 
-        for user in register_cache:
-            if user["time"] > 0:
-                user["time"] -= 1
-            else:
-                register_cache.remove(user)
-
-        for user in ratelimit_cache:
-            if user["time"] > 0:
-                user["time"] -= 1
-
-        for verification in verify_cache:
-            if verification["expires"] > 0:
-                verification["expires"] -= 1
-            else:
-                verify_cache.remove(verification)
-
-        time.sleep(1)
+        time.sleep(21600)
 
 
 task_thread = threading.Thread(target=tasks)

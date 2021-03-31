@@ -210,6 +210,9 @@ def api_register(name, email, password):
 
     for user in register_cache:
         if ip.address == user["ip"]:
+            if user["timestamp"] < time.time():
+                register_cache.remove(user)
+
             return {"text": "You are being ratelimited!",
                     "error": "ratelimit"}, 429
 
@@ -258,7 +261,7 @@ def api_register(name, email, password):
     verify_token = gen_token()
     verify_cache.append({"id": id,
                          "verify_token": verify_token,
-                         "expires": 86400})
+                         "timestamp": time.time() + 86400})
 
     subject = "Connext Email Verification"
     body = (f"Hello {escape(name)}!\n\n"
@@ -270,7 +273,7 @@ def api_register(name, email, password):
 
     email_send(email, subject, body)
 
-    register_cache.append({"ip": ip.address, "time": 10800})
+    register_cache.append({"ip": ip.address, "time": time.time() + 21600})
 
     session["recovery_token"] = recovery_token
 
@@ -317,7 +320,8 @@ def api_register_resend(recovery_token, email):
     verify_token = gen_token()
     verify_cache.append({"id": account.id,
                          "verify_token": verify_token,
-                         "expires": 86400})
+                         "timestamp": time.time() + 86400})
+    # 86400
 
     subject = "Connext Email Verification"
     ip = IP(request.headers.get('CF-Connecting-IP'))
@@ -341,9 +345,30 @@ def api_register_resend(recovery_token, email):
 @json_key("verify_token", 256, 256)
 def api_verify(verify_token):
     for verification in verify_cache:
-        print(verification)
         if verify_token == verification["verify_token"]:
             account = User.query.filter_by(id=verification["id"]).first()
+
+            subject = "Connext Email Verification"
+            ip = IP(request.headers.get('CF-Connecting-IP'))
+            body = (f"Hello {escape(account.name)}!\n\n"
+                    "Thanks for signing up with Connext! "
+                    "One quick thing, we need you to verify your account.\n\n"
+                    f"Go to https://connext.dev/verify#token={verify_token} "
+                    "to verify your account.\n\n"
+                    f"Registered at {ip.location} by {ip.address}")
+
+            if verification["timestamp"] < time.time():
+                verify_cache.remove(verification)
+
+                email_send(account.email, subject, body)
+
+                return {"text": ("Verification token has expired! Email was "
+                                 "resent. If your current email doesn't work "
+                                 "visit <a "
+                                 "href='https://connext.dev/register/resend'>"
+                                 "https://connext.dev/register/resend</a>."),
+                        "error": "invalid_verify_token"}, 404
+
             account.recovery_token = None
             account.verified = True
             account.token = jwt.encode(user_asdict(account),
@@ -795,7 +820,7 @@ def api_temp_ban(account, id, reason):
     body = (f"Hello {escape(account.name)}!\n\n"
             "A moderator has temporarily banned your account for 14 days. "
             "If you disagree with this, please contact another moderator.\n\n"
-            f"You were banned with reason {user.ban_reason}\n\n"
+            f"You were banned with reason {user.ban_reason}.\n\n"
             "We hope you understand. Thanks for using Connext!")
 
     email_send(user.email, subject, body)
@@ -872,9 +897,9 @@ def api_ban(account, id, reason):
     body = (f"Hello {escape(account.name)}!\n\n"
             "A moderator has permanently banned your account. "
             "If you disagree with this, please contact another moderator.\n\n"
-            f"You were banned with reason {user.ban_reason}\n\n"
+            f"You were banned with reason {user.ban_reason}.\n\n"
             "If you'd like your account deleted, "
-            "go to https://connext.dev/delete for instructions\n\n"
+            "go to https://connext.dev/delete for instructions.\n\n"
             "We hope you understand. Thanks for using Connext!")
 
     email_send(user.email, subject, body)
@@ -945,7 +970,7 @@ def api_unban(account, id):
     body = (f"Hello {escape(account.name)}!\n\n"
             "A moderator has unbanned your account.\n\n"
             "Please read our Terms of Service and "
-            "refer to your ban reason to avoid future bans"
+            "refer to your ban reason to avoid future bans.\n\n"
             "We hope you understand. Thanks for using Connext!")
 
     email_send(user.email, subject, body)
