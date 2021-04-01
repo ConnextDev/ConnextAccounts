@@ -403,7 +403,10 @@ window.create = async function(token) {
         return
     }
 
-    let json = {name: name, callback: callback, website: website, captcha: token}
+    let json = {name: name, callback: callback, captcha: token}
+    if (website) {
+        json.website = website
+    }
 
     let response = await fetch("/api/apps/create", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     if (response.status == 200) {

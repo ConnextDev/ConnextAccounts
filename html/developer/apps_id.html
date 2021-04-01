@@ -431,12 +431,6 @@ window.update = async function(token) {
     }
 
     let website = document.getElementById("website").value
-    if (website == false) {
-        document.getElementById("error").innerText = "Please specify a website!"
-        grecaptcha.reset()
-        unlock_update()
-        return
-    }
     if (website.length > 32) {
         document.getElementById("error").innerText = "Website must be at most 32 characters!"
         grecaptcha.reset()
@@ -444,7 +438,10 @@ window.update = async function(token) {
         return
     }
 
-    let json = {name: name, callback: callback, website: website, captcha: token}
+    let json = {name: name, callback: callback, captcha: token}
+    if (website) {
+        json.website = website
+    }
 
     let response = await fetch("/api/apps/{{app.id}}/update", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
     if (response.status == 200) {
