@@ -1199,7 +1199,7 @@ def api_apps_id(account, id):
 @flask.route("/api/apps/create", methods=["POST"])
 @ratelimit
 @auth(True)
-# @captcha3
+@captcha3
 @json_key("callback", 1, 128)
 @json_key("name", 1, 32)
 @json_key("website", 1, 32, required=False)
@@ -1241,7 +1241,7 @@ def api_apps_create(account, callback, name, website):
 @flask.route("/api/apps/<int:id>/update", methods=["POST"])
 @ratelimit
 @auth(True)
-# @captcha3
+@captcha3
 @json_key("callback", 1, 128, required=False)
 @json_key("name", 1, 32, required=False)
 @json_key("website", 1, 32, required=False)
@@ -1305,7 +1305,7 @@ def api_apps_update(account, id, callback, name, website):
 @flask.route("/api/apps/<int:id>/reset", methods=["POST"])
 @ratelimit
 @auth(True)
-# @captcha3
+@captcha3
 def api_apps_reset(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -1348,7 +1348,7 @@ def api_apps_reset(account, id):
 @flask.route("/api/apps/<int:id>/delete", methods=["POST"])
 @ratelimit
 @auth(True)
-# @captcha3
+@captcha3
 def api_apps_delete(account, id):
     if not id:
         return {"text": "Please specify a value for 'id'!",
