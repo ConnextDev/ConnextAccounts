@@ -1289,7 +1289,8 @@ def api_apps_update(account, id, callback, name, website):
 
     if website:
         website = website.replace("http://", "").replace("https://", "")
-        app.website = website
+
+    app.website = website
 
     for app_user in AppUser.query.filter_by(app_id=app.id).all():
         db.session.delete(app_user)
