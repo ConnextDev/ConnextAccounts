@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 
-<title>Connext | Developer</title>
+<title>Connext | App Dashboard</title>
 
-<meta name="description" content="Developer portal on Connext Accounts">
+<meta name="description" content="Create an app on Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
 <link rel="preconnect" href="https://fonts.gstatic.com">
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <style>
 
@@ -338,6 +340,84 @@ window.show_hidden = async function(element) {
     child.style.opacity = "1"
 }
 
+document.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+        document.getElementById("login-button").click()
+    }
+})
+
+let locked = false
+
+const lock = async function() {
+    locked = true
+    document.getElementById("login-button").innerText = "Creating..."
+    document.getElementById("login-button").style.cursor = "default"
+}
+
+const unlock = async function() {
+    locked = false
+    document.getElementById("login-button").innerText = "Create"
+    document.getElementById("login-button").style.cursor = "pointer"
+}
+
+window.create = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock()
+    }
+
+    let name = document.getElementById("name").value
+    if (name == false) {
+        document.getElementById("error").innerText = "Please specify a name!"
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+    if (name.length > 32) {
+        document.getElementById("error").innerText = "Name must be at most 32 characters!"
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+
+    let callback = document.getElementById("callback").value
+    if (callback == false) {
+        document.getElementById("error").innerText = "Please specify a callback!"
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+    if (callback.length > 128) {
+        document.getElementById("error").innerText = "Callback must be at most 128 characters!"
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+
+    let website = document.getElementById("website").value
+    if (website.length > 32) {
+        document.getElementById("error").innerText = "Website must be at most 32 characters!"
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+
+    let json = {name: name, callback: callback, website: website, captcha: token}
+
+    let response = await fetch("/api/apps/create", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
+    if (response.status == 200) {
+        let data = await response.json()
+        location.replace("/developer/apps/" + data.app.id)
+        return
+    } else {
+        let data = await response.json()
+        document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
+        unlock()
+        return
+    }
+}
 </script>
 
 </head>
@@ -360,13 +440,13 @@ window.show_hidden = async function(element) {
 <div id="blocks">
 
 <a href="/developer">
-<div class="active-block">
+<div class="block">
 <p>Home</p>
 </div>
 </a>
 
 <a href="/developer/apps">
-<div class="block">
+<div class="active-block">
 <p>Apps</p>
 </div>
 </a>
@@ -402,12 +482,26 @@ GitHub
 <div id="body">
 <div id="content">
 
-<h1>Home</h1>
+<h1>Create App</h1>
 
-<p>Hello! This is the Connext Accounts developer portal. At the moment, there isn't much here, but as we add more features and documentation (especially for other projects like Bridge and Refresh) there will be more to look at and more available resources. Happy developing!</p>
-<p>Check out the <a href="https://github.com/ConnextDev/ConnextAccounts" class="link" target="_blank">Connext Accounts GitHub</a>!</p>
+<p>Create an app on Connext Accounts.</p>
 
-</div>
-</div>
+<h5 id="error"></h5>
+
+<h6 style="margin-bottom: 1vh">Title that will be shown on the login page</h6>
+<input type="text" id="name" placeholder="Name" style="margin-bottom: 0" autofocus>
+
+<h6 style="margin-bottom: 1vh">URL that will be redirected to with a fragment including the token when authorized</h6>
+<input type="text" id="callback" placeholder="Callback" style="margin-bottom: 0">
+
+<h6 style="margin-bottom: 1vh">Website that will be shown on the login page</h6>
+<input type="text" id="website" placeholder="Website (Optional)">
+
+<br>
+
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="create" data-action="submit" style="margin-bottom: 0">Create</button>
+
+</div></div>
+
 </body>
 </html>

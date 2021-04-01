@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 
-<title>Connext | Developer</title>
+<title>Connext | App Dashboard</title>
 
-<meta name="description" content="Developer portal on Connext Accounts">
+<meta name="description" content="View your app on Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
 <link rel="preconnect" href="https://fonts.gstatic.com">
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <style>
 
@@ -338,6 +340,180 @@ window.show_hidden = async function(element) {
     child.style.opacity = "1"
 }
 
+window.copy = async function(text, element) {
+    navigator.clipboard.writeText(text);
+
+    elements = document.getElementsByClassName("copy")
+    for (let i = 0; i < elements.length; i++) {
+        elements[i].innerText = "Copy"
+    }
+
+    element.innerText = "Copied";
+}
+
+document.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+        document.getElementById("login-button").click()
+    }
+})
+
+let locked = false
+
+const lock_update = async function() {
+    locked = true
+    document.getElementById("login-button").innerText = "Updating..."
+    document.getElementById("login-button").style.cursor = "default"
+}
+
+const unlock_update = async function() {
+    locked = false
+    document.getElementById("login-button").innerText = "Update"
+    document.getElementById("login-button").style.cursor = "pointer"
+}
+
+const lock_reset = async function() {
+    locked = true
+    document.getElementById("reset-button").innerText = "Resetting..."
+    document.getElementById("reset-button").style.cursor = "default"
+}
+
+const unlock_reset = async function() {
+    locked = false
+    document.getElementById("reset-button").innerText = "Reset"
+    document.getElementById("reset-button").style.cursor = "pointer"
+}
+
+const lock_delete = async function() {
+    locked = true
+    document.getElementById("delete-button").innerText = "Deleting..."
+    document.getElementById("reset-button").style.cursor = "default"
+}
+
+const unlock_delete = async function() {
+    locked = false
+    document.getElementById("delete-button").innerText = "Delete"
+    document.getElementById("delete-button").style.cursor = "pointer"
+}
+
+window.update = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock_update()
+    }
+
+    let name = document.getElementById("name").value
+    if (name == false) {
+        document.getElementById("error").innerText = "Please specify a name!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+    if (name.length > 32) {
+        document.getElementById("error").innerText = "Name must be at most 32 characters!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+
+    let callback = document.getElementById("callback").value
+    if (callback == false) {
+        document.getElementById("error").innerText = "Please specify a callback!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+    if (callback.length > 128) {
+        document.getElementById("error").innerText = "Callback must be at most 128 characters!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+
+    let website = document.getElementById("website").value
+    if (website == false) {
+        document.getElementById("error").innerText = "Please specify a website!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+    if (website.length > 32) {
+        document.getElementById("error").innerText = "Website must be at most 32 characters!"
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+
+    let json = {name: name, callback: callback, website: website, captcha: token}
+
+    let response = await fetch("/api/apps/{{app.id}}/update", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(json)})
+    if (response.status == 200) {
+        let data = await response.json()
+        location.reload()
+        return
+    } else {
+        let data = await response.json()
+        document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
+        unlock_update()
+        return
+    }
+}
+
+window.reset = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock_reset()
+    }
+
+    let response = await fetch("/api/apps/{{app.id}}/reset", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({captcha: token})})
+    if (response.status == 200) {
+        let data = await response.json()
+        location.reload()
+        return
+    } else {
+        let data = await response.json()
+        document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
+        unlock_reset()
+        return
+    }
+}
+
+window.delete = async function(token) {
+    if (locked) {
+        return
+    } else {
+        lock_delete()
+    }
+
+    let response = await fetch("/api/apps/{{app.id}}/delete", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({captcha: token})})
+    if (response.status == 200) {
+        let data = await response.json()
+        location.replace("/developer/apps")
+        return
+    } else {
+        let data = await response.json()
+        document.getElementById("error").innerText = data.text
+        grecaptcha.reset()
+        unlock_delete()
+        return
+    }
+}
+
+window.delete_modal = async function(token) {
+    if (locked) {
+        return
+    }
+
+    if (prompt("Please type the app name to confirm you want to delete it ({{app.name}}):") == "{{app.name}}") {
+        window.delete(token)
+    } else {
+        alert("Incorrect app name!")
+    }
+}
+
 </script>
 
 </head>
@@ -360,13 +536,13 @@ window.show_hidden = async function(element) {
 <div id="blocks">
 
 <a href="/developer">
-<div class="active-block">
+<div class="block">
 <p>Home</p>
 </div>
 </a>
 
 <a href="/developer/apps">
-<div class="block">
+<div class="active-block">
 <p>Apps</p>
 </div>
 </a>
@@ -402,12 +578,55 @@ GitHub
 <div id="body">
 <div id="content">
 
-<h1>Home</h1>
+<h1>{{app.name}}</h1>
+<p>View data and update your app.</p>
 
-<p>Hello! This is the Connext Accounts developer portal. At the moment, there isn't much here, but as we add more features and documentation (especially for other projects like Bridge and Refresh) there will be more to look at and more available resources. Happy developing!</p>
-<p>Check out the <a href="https://github.com/ConnextDev/ConnextAccounts" class="link" target="_blank">Connext Accounts GitHub</a>!</p>
+<h5 id="error"></h5>
 
-</div>
-</div>
+<h6 style="margin-bottom: 1vh">Title that will be shown on the login page</h6>
+<input type="text" id="name" value="{{app.name}}" placeholder="Name" style="margin-bottom: 0" autofocus>
+
+<h6 style="margin-bottom: 1vh">Link that will be redirected to with a fragment including the token when authorized</h6>
+<input type="text" id="callback" value="{{app.callback}}" placeholder="Callback" style="margin-bottom: 0">
+
+<h6 style="margin-bottom: 1vh">Website that will be shown on the login page</h6>
+<input type="text" id="website" {% if app.website %}value="{{app.website}}" {% endif %}placeholder="Website (Optional)">
+
+<br>
+
+<button id="login-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="update" data-action="submit" style="margin-bottom: 0">Update</button>
+
+{% if app.approved %}
+<h6>Updating will unapprove your app and disable all currently logged in accounts!</h6>
+{% endif %}
+
+<h2>Data</h2>
+
+<p>App ID</p>
+
+<code class="code">{{app.id}}</code>
+
+<p><a onclick="window.copy('{{app.id}}', this)" class="link copy">Copy</a></p>
+
+<p>Authorization Endpoint</p>
+
+<code class="code">https://connext.dev/oauth/authorize?response_type=token&app_id={{app.id}}</code>
+
+<p><a href="https://connext.dev/oauth/authorize?response_type=token&app_id={{app.id}}" target="_blank", class="link">Open</a> | <a onclick="window.copy('https://connext.dev/oauth/authorize?response_type=token&app_id={{app.id}}', this)" class="link copy">Copy</a></p>
+
+<p>Secret (click to reveal)</p>
+
+<div class="code hide" onclick="window.show_hidden(this)"><code style="word-break: break-all">{{app.secret}}</code></div>
+
+<p><a onclick="window.copy('{{app.secret}}', this)" class="link copy">Copy</a></p>
+
+<button id="reset-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="reset" data-action="submit" style="margin-bottom: 0">Reset</button>
+
+<h2>Delete</h2>
+
+<button id="delete-button" class="g-recaptcha" data-sitekey="6LfHHmgaAAAAAP3pJ-RCcDu7EA27Nru6VHtuoMX2" data-callback="delete_modal" data-action="submit" style="margin-bottom: 0">Delete</button>
+
+</div></div>
+
 </body>
 </html>

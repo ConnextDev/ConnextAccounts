@@ -321,7 +321,11 @@ window.login = async function(token) {
 </div>
 <div id="input">
 <h3 style="margin-bottom: 1.5vh">Login to {{app.name}} with Connext</h3>
-<h5 style="margin-top: 0">{{owner.name}} | <a href="https://{{app.website}}" target="_blank">{{app.website}}</a></h5>
+<h5 style="margin-top: 0">{{owner.name}}
+{% if app.website %}
+ | <a href="https://{{app.website}}" target="_blank">{{app.website}}</a>
+{% endif %}
+</h5>
 <p>This app will have your:</p>
 <div style="margin-bottom: 2vh">
 <li>User ID</li>

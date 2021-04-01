@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from utils import (os, werkzeug, jwt, time, re,
+from utils import (os, werkzeug, jwt, time, re, shutil,
 
                    request, redirect, render_template, send_file, session,
                    Markup, secure_filename, escape,
@@ -83,7 +83,7 @@ def handle_server_error(e):
 
 @flask.route("/icon/<int:user_id>")
 def icon_handler(user_id):
-    return send_file(f"./icon/{secure_filename(user_id)}.png")
+    return send_file(f"./icon/{secure_filename(str(user_id))}.webp")
 
 
 @flask.route("/media/<string:file>")
@@ -108,17 +108,52 @@ def html_account(account):
 @flask.route("/developer")
 @auth(True, "/login", "developer")
 def html_developer(account):
-    # return render_template("developer/home.html")
-
-    return render_template("errors/unfinished.html"), 404
+    return render_template("developer/home.html",
+                           account=user_asdict(account))
 
 @flask.route("/developer/apps")
 @auth(True, "/login", "developer/apps")
 def html_developer_apps(account):
-    # return render_template("developer/apps.html",
-    #                        account=user_asdict(account, True))
+    return render_template("developer/apps.html",
+                           account=user_asdict(account, True))
 
-    return render_template("errors/unfinished.html"), 404
+
+@flask.route("/developer/apps/create")
+@auth(True, "/login", "developer/apps/create")
+def html_developer_apps_create(account):
+    return render_template("developer/apps_create.html",
+                           account=user_asdict(account))
+
+
+@flask.route("/developer/apps/<int:id>")
+@auth(True, "/login", "developer/apps")
+def html_developer_apps_id(account, id):
+    if not id:
+        return render_template("errors/error.html",
+                               error="Please specify an ID!")
+
+    if not isinstance(id, int):
+        return render_template("errors/error.html",
+                               error="ID must be an integer!")
+
+    if len(str(id)) != 12:
+        return render_template("errors/error.html",
+                               error="ID must be 12 characters!")
+
+    app = App.query.filter_by(id=id).first()
+    if not app:
+        return render_template("errors/error.html",
+                               error="App does not exist!")
+
+    if account.id != app.owner.id:
+        return render_template("errors/error.html",
+                               error="You do not own this app!")
+
+    app_dict = app_asdict(app)
+    app_dict["secret"] = app.secret
+
+    return render_template("developer/apps_id.html",
+                           app=app_dict, account=user_asdict(account))
 
 
 @flask.route("/moderator")
@@ -128,8 +163,6 @@ def html_moderator(account):
         return render_template("errors/forbidden.html",
                                error="You are not a moderator!"), 403
 
-    return render_template("errors/unfinished.html"), 404
-
 
 @flask.route("/admin")
 @auth(True, "/login", "admin")
@@ -138,36 +171,34 @@ def html_admin(account):
         return render_template("errors/forbidden.html",
                                error="You are not an admin!"), 403
 
-    return render_template("errors/unfinished.html"), 404
-
 
 @flask.route("/register")
 @no_auth("/account")
 def html_register():
-    return render_template("register.html")
+    return render_template("account/register.html")
 
 
 @flask.route("/register/resend")
 @no_auth("/account")
 def html_register_resend():
-    return render_template("register_resend.html")
+    return render_template("account/register_resend.html")
 
 
 @flask.route("/verify")
 @no_auth("/account")
 def html_verify():
-    return render_template("verify.html")
+    return render_template("account/verify.html")
 
 
 @flask.route("/login")
 @no_auth("/account")
 def html_login():
-    return render_template("login.html")
+    return render_template("account/login.html")
 
 
 @flask.route("/delete")
 def html_delete():
-    return render_template("delete.html")
+    return render_template("account/delete.html")
 
 
 @flask.route("/error")
@@ -266,7 +297,7 @@ def api_register(name, email, password):
 
     db.session.commit()
 
-    os.system(f"cp ./media/logo.webp ./icon/{id}.webp")
+    shutil.copyfile("./media/logo.webp", f"./icon/{id}.webp")
 
     verify_token = gen_token()
     verify_cache.append({"id": id,
@@ -1038,7 +1069,7 @@ def oauth_deauthorize(account, app_id):
     if not app_user:
         return {"You are not logged into this app!", "invalid_app_id"}
 
-    app_user.delete()
+    db.session.delete(app_user)
 
     db.session.commit()
 
@@ -1169,9 +1200,9 @@ def api_apps_id(account, id):
 @ratelimit
 @auth(True)
 # @captcha3
-@json_key("callback", 8, 128)
+@json_key("callback", 1, 128)
 @json_key("name", 1, 32)
-@json_key("website", 8, 32)
+@json_key("website", 1, 32, required=False)
 def api_apps_create(account, callback, name, website):
     if "#" in callback:
         return {"text": "Callback must not contain #!",
@@ -1184,16 +1215,22 @@ def api_apps_create(account, callback, name, website):
     if callback[:7] != "http://" and callback[:8] != "https://":
         callback = "https://" + callback
 
-    website = website.replace("http://", "").replace("https://", "")
+    if website:
+        website = website.replace("http://", "").replace("https://", "")
 
-    db.session.add(App(id=id,
-                       owner_id=account.id,
-                       secret=secret,
-                       callback=callback,
-                       name=name,
-                       website=website,
-                       approved=False,
-                       verified=False))
+    app = App(id=id,
+              owner_id=account.id,
+              secret=secret,
+              callback=callback,
+              name=name,
+              website=website,
+              approved=False,
+              verified=False)
+
+    if website:
+        app.website = website
+
+    db.session.add(app)
 
     db.session.commit()
 
@@ -1205,9 +1242,9 @@ def api_apps_create(account, callback, name, website):
 @ratelimit
 @auth(True)
 # @captcha3
-@json_key("callback", 8, 128, required=False)
+@json_key("callback", 1, 128, required=False)
 @json_key("name", 1, 32, required=False)
-@json_key("website", 8, 32, required=False)
+@json_key("website", 1, 32, required=False)
 def api_apps_update(account, id, callback, name, website):
     if not id:
         return {"text": "Please specify a value for 'id'!",
@@ -1242,22 +1279,22 @@ def api_apps_update(account, id, callback, name, website):
         return {"text": "You do not own this app!",
                 "error": "no_app_access"}, 403
 
-    if callback[:7] != "http://" and callback[:8] != "https://":
-        callback = "https://" + callback
-
-    website = website.replace("http://", "").replace("https://", "")
-
-    if callback:
-        app.callback = callback
-
     if name:
         app.name = name
 
+    if callback:
+        if callback[:7] != "http://" and callback[:8] != "https://":
+            callback = "https://" + callback
+        app.callback = callback
+
     if website:
+        website = website.replace("http://", "").replace("https://", "")
         app.website = website
 
     for app_user in AppUser.query.filter_by(app_id=app.id).all():
-        app_user.delete()
+        db.session.delete(app_user)
+
+    app.approved = False
 
     db.session.commit()
 
@@ -1299,7 +1336,7 @@ def api_apps_reset(account, id):
                 "error": "no_app_access"}, 403
 
     for app_user in AppUser.query.filter_by(app_id=app.id).all():
-        app_user.delete()
+        db.session.delete(app_user)
 
     app.secret = gen_token(App, "secret")
 
@@ -1341,11 +1378,13 @@ def api_apps_delete(account, id):
         return {"text": "You do not own this app!",
                 "error": "no_app_access"}, 403
 
-    app.delete()
+    app_dict = app_asdict(app)
+
+    db.session.delete(app)
 
     db.session.commit()
 
-    return {"text": f"App '{app.name}' deleted.", "app": app_asdict(app)}, 200
+    return {"text": f"App '{app.name}' deleted.", "app": app_dict}, 200
 
 
 # App Tools

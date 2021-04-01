@@ -11,6 +11,7 @@ import jwt
 import datetime
 import copy
 import re
+import shutil
 
 from flask import (Flask, request, redirect, render_template, send_file,
                    session, Markup, escape)
@@ -78,9 +79,9 @@ class App(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     owner_id = db.Column(db.BigInteger, db.ForeignKey(User.id), nullable=False)
     secret = db.Column(db.String(256), unique=True, nullable=False)
-    callback = db.Column(db.String(1024), nullable=False)
     name = db.Column(db.String(32), nullable=False)
-    website = db.Column(db.String(64), nullable=False)
+    callback = db.Column(db.String(1024), nullable=False)
+    website = db.Column(db.String(64))
     approved = db.Column(db.Boolean, nullable=False)
     verified = db.Column(db.Boolean, nullable=False)
 
