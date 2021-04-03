@@ -205,6 +205,14 @@ td {
     cursor: pointer;
 }
 
+.title-block {
+    margin: 1.5vh 0 0.5vh 0;
+
+    text-align: left;
+
+    padding: 0 calc(1920px * 0.015) 0 calc(1920px * 0.015);
+}
+
 #body {
     padding: 1vh 1vw 0 calc(1920px * 0.16);
 }
@@ -259,7 +267,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -273,7 +281,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -287,7 +295,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -301,7 +309,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -485,7 +493,7 @@ window.delete = async function(token) {
     let response = await fetch("/api/apps/{{app.id}}/delete", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({captcha: token})})
     if (response.status == 200) {
         let data = await response.json()
-        location.replace("/developer/apps")
+        location.replace("/dashboard/developer/apps")
         return
     } else {
         let data = await response.json()
@@ -519,7 +527,7 @@ window.delete_modal = async function(token) {
 <a href="/"><img src="/media/logo.webp" id="warning-logo" alt="Logo"></a>
 <h1>Unsupported</h1>
 <h3>This page is not supported on mobile!</h3>
-<h5><a href="/">Home</a> | <a href="/account">Account</a></h5>
+<h5><a href="/" class="link">Home</a> | <a href="/dashboard/account/profile" class="link">Account</a></h5>
 
 </div></div>
 
@@ -529,13 +537,29 @@ window.delete_modal = async function(token) {
 
 <div id="blocks">
 
-<a href="/developer">
+<a href="/dashboard">
 <div class="block">
 <p>Home</p>
 </div>
 </a>
 
-<a href="/developer/apps">
+<h5 class="title-block">Account</h5>
+
+<a href="/dashboard/account/profile">
+<div class="block">
+<p>Profile</p>
+</div>
+</a>
+
+<a href="/dashboard/account/security">
+<div class="block">
+<p>Security</p>
+</div>
+</a>
+
+<h5 class="title-block">Developer</h5>
+
+<a href="/dashboard/developer/apps">
 <div class="active-block">
 <p>Apps</p>
 </div>
@@ -543,19 +567,49 @@ window.delete_modal = async function(token) {
 
 <a href="https://github.com/ConnextDev/ConnextAccounts" target="_blank">
 <div class="block">
-GitHub
+<p>GitHub</p>
 </div>
 </a>
 
+{% if account.permission >= 1 %}
+<h5 class="title-block">Moderator</h5>
+
+<a href="/dashboard/moderator/users">
+<div class="block">
+<p>Users</p>
+</div>
+</a>
+
+<a href="/dashboard/moderator/bans">
+<div class="block">
+<p>Bans</p>
+</div>
+</a>
+{% endif %}
+
+{% if account.permission >= 2 %}
+<a href="/dashboard/admin/permissions">
+<div class="block">
+<p>Permissions</p>
+</div>
+</a>
+
+<a href="/dashboard/admin/apps">
+<div class="block">
+<p>Apps</p>
+</div>
+</a>
+{% endif %}
+
 </div></div>
 
-<img src="/icon/{{account.id}}" id="profile" onclick="show_profile()" style="cursor: pointer">
+<img src="/users/{{account.id}}/pfp" id="profile" onclick="show_profile()" style="cursor: pointer">
 
 <div id="context">
 
 <h5 style="margin: 0; padding: 0 calc(1920px * 0.005) 1vh calc(1920px * 0.005)">Logged in as {{account.name}}</h5>
 
-<a href="/account">
+<a href="/dashboard/account/profile">
 <div class="context-block">
 <p>Account</p>
 </div>

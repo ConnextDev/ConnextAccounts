@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 
-<title>Connext | Developer</title>
+<title>Connext | App Dashboard</title>
 
-<meta name="description" content="Developer portal on Connext Accounts">
+<meta name="description" content="App dashboard on Connext Accounts">
 <meta name="keywords" content="connext, bridge, accounts, aizakku, dev, app, developers, web, html, python, flask, blog, login, register, 2fa, encryption, fast, free, easy, oauth, hosting">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="shortcut icon" type="image/jpg" href="/media/logo.webp"/>
+
 <link rel="preconnect" href="https://fonts.gstatic.com">
 
 <style>
@@ -203,6 +204,14 @@ td {
     cursor: pointer;
 }
 
+.title-block {
+    margin: 1.5vh 0 0.5vh 0;
+
+    text-align: left;
+
+    padding: 0 calc(1920px * 0.015) 0 calc(1920px * 0.015);
+}
+
 #body {
     padding: 1vh 1vw 0 calc(1920px * 0.16);
 }
@@ -257,7 +266,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -271,7 +280,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -285,7 +294,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -299,7 +308,7 @@ td {
         display: block;
     }
 
-    #content, #body, #sidebar {
+    #content, #body, #sidebar, #profile {
         display: none;
     }
 }
@@ -349,7 +358,7 @@ window.show_hidden = async function(element) {
 <a href="/"><img src="/media/logo.webp" id="warning-logo" alt="Logo"></a>
 <h1>Unsupported</h1>
 <h3>This page is not supported on mobile!</h3>
-<h5><a href="/">Home</a> | <a href="/account">Account</a></h5>
+<h5><a href="/" class="link">Home</a> | <a href="/dashboard/account/profile" class="link">Account</a></h5>
 
 </div></div>
 
@@ -359,33 +368,79 @@ window.show_hidden = async function(element) {
 
 <div id="blocks">
 
-<a href="/developer">
-<div class="active-block">
+<a href="/dashboard">
+<div class="block">
 <p>Home</p>
 </div>
 </a>
 
-<a href="/developer/apps">
+<h5 class="title-block">Account</h5>
+
+<a href="/dashboard/account/profile">
 <div class="block">
+<p>Profile</p>
+</div>
+</a>
+
+<a href="/dashboard/account/security">
+<div class="block">
+<p>Security</p>
+</div>
+</a>
+
+<h5 class="title-block">Developer</h5>
+
+<a href="/dashboard/developer/apps">
+<div class="active-block">
 <p>Apps</p>
 </div>
 </a>
 
 <a href="https://github.com/ConnextDev/ConnextAccounts" target="_blank">
 <div class="block">
-GitHub
+<p>GitHub</p>
 </div>
 </a>
 
+{% if account.permission >= 1 %}
+<h5 class="title-block">Moderator</h5>
+
+<a href="/dashboard/moderator/users">
+<div class="block">
+<p>Users</p>
+</div>
+</a>
+
+<a href="/dashboard/moderator/bans">
+<div class="block">
+<p>Bans</p>
+</div>
+</a>
+{% endif %}
+
+{% if account.permission >= 2 %}
+<a href="/dashboard/admin/permissions">
+<div class="block">
+<p>Permissions</p>
+</div>
+</a>
+
+<a href="/dashboard/admin/apps">
+<div class="block">
+<p>Apps</p>
+</div>
+</a>
+{% endif %}
+
 </div></div>
 
-<img src="/icon/{{account.id}}" id="profile" onclick="show_profile()" style="cursor: pointer">
+<img src="/users/{{account.id}}/pfp" id="profile" onclick="show_profile()" style="cursor: pointer">
 
 <div id="context">
 
 <h5 style="margin: 0; padding: 0 calc(1920px * 0.005) 1vh calc(1920px * 0.005)">Logged in as {{account.name}}</h5>
 
-<a href="/account">
+<a href="/dashboard/account/profile">
 <div class="context-block">
 <p>Account</p>
 </div>
@@ -402,12 +457,54 @@ GitHub
 <div id="body">
 <div id="content">
 
-<h1>Home</h1>
+<h1>Apps</h1>
 
-<p>Hello! This is the Connext Accounts developer portal. At the moment, there isn't much here, but as we add more features and documentation (especially for other projects like Bridge and Refresh) there will be more to look at and more available resources. Happy developing!</p>
-<p>Check out the <a href="https://github.com/ConnextDev/ConnextAccounts" class="link" target="_blank">Connext Accounts GitHub</a>!</p>
+<p>Hello! This is the app dashboard for Connext Accounts. You can integrate our account system into your app for free! Get started by adding an app to the dashboard, and once we approve it, you will be able to use it on your app!</p>
+
+<a href="/dashboard/developer/apps/create"><button id="login-button">Create</button></a>
 
 </div>
+
+<table>
+
+    <colgroup>
+        <col span="1" style="width: calc(1920px * 0.16)">
+        <col span="1" style="width: calc(1920px * 0.16)">
+        <col span="1" style="width: calc(1920px * 0.06)">
+        <col span="1" style="width: calc(1920px * 0.06)">
+    </colgroup>
+
+    <tbody>
+
+        <tr>
+            <th>Name</th>
+            <th>Website</th>
+
+            <th style="text-align: center">Approved</th>
+            <th style="text-align: center">Verified</th>
+        </tr>
+
+        {% for app in account.apps.own %}
+        <tr>            
+            <td><a href="/dashboard/developer/apps/{{app.id}}" onclick="location.href = this.getAttribute('data-href')">{{app.name}}</a></td>
+            <td>{% if app.website %}<a href="https://{{app.website}}" target="_blank" class="link">{% endif %}{{app.website}}</a></td>
+
+            {% if app.approved %}
+            <td style="text-align: center"><h5><img src="/media/verified.webp" style="width: calc(1920px * 0.01);"></h5></td>
+            {% else %}
+            <td style="text-align: center">No</td>
+            {% endif %}
+
+            {% if app.verified %}
+            <td style="text-align: center"><img src="/media/verified.webp" style="width: calc(1920px * 0.01);"></td>
+            {% else %}
+            <td style="text-align: center">No</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+
+    </tbody>
+</table>
 </div>
 </body>
 </html>

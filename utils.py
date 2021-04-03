@@ -40,6 +40,7 @@ threads = []
 flask = Flask(__name__, template_folder="./html")
 flask.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 flask.config["SECRET_KEY"] = session_secret
+flask.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 flask.config["SQLALCHEMY_DATABASE_URI"] = ("mysql+pymysql://"
                                            "accounts@localhost:3306/accounts")
 

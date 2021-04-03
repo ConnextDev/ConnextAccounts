@@ -81,11 +81,6 @@ def handle_server_error(e):
 # File Handler
 
 
-@flask.route("/icon/<int:user_id>")
-def icon_handler(user_id):
-    return send_file(f"./icon/{secure_filename(str(user_id))}.webp")
-
-
 @flask.route("/media/<string:file>")
 def media_handler(file):
     return send_file(f"./media/{secure_filename(file)}")
@@ -99,35 +94,37 @@ def html_index():
     return render_template("errors/unfinished.html"), 404
 
 
-@flask.route("/account")
-@auth(True, "/login")
-def html_account(account):
-    return render_template("errors/unfinished.html"), 404
-
-
-@flask.route("/developer")
-@auth(True, "/login", "developer")
-def html_developer(account):
-    return render_template("developer/home.html",
-                           account=user_asdict(account))
-
-@flask.route("/developer/apps")
-@auth(True, "/login", "developer/apps")
-def html_developer_apps(account):
-    return render_template("developer/apps.html",
+@flask.route("/dashboard")
+@auth(True, "/login", "dashboard")
+def html_dashboard(account):
+    return render_template("dashboard/home.html",
                            account=user_asdict(account, True))
 
 
-@flask.route("/developer/apps/create")
-@auth(True, "/login", "developer/apps/create")
-def html_developer_apps_create(account):
-    return render_template("developer/apps_create.html",
+@flask.route("/dashboard/account/profile")
+@auth(True, "/login", "dashboard/account/profile")
+def html_dashboard_account_profile(account):
+    return render_template("dashboard/account/profile.html",
+                           account=user_asdict(account, True))
+
+
+@flask.route("/dashboard/developer/apps")
+@auth(True, "/login", "dashboard/developer/apps")
+def html_dashboard_developer_apps(account):
+    return render_template("dashboard/developer/apps.html",
+                           account=user_asdict(account, True))
+
+
+@flask.route("/dashboard/developer/apps/create")
+@auth(True, "/login", "dashboard/developer/apps/create")
+def html_dashboard_developer_apps_create(account):
+    return render_template("dashboard/developer/apps_create.html",
                            account=user_asdict(account))
 
 
-@flask.route("/developer/apps/<int:id>")
-@auth(True, "/login", "developer/apps")
-def html_developer_apps_id(account, id):
+@flask.route("/dashboard/developer/apps/<int:id>")
+@auth(True, "/login", "dashboard/developer/apps")
+def html_dashboard_developer_apps_id(account, id):
     if not id:
         return render_template("errors/error.html",
                                error="Please specify an ID!")
@@ -152,7 +149,7 @@ def html_developer_apps_id(account, id):
     app_dict = app_asdict(app)
     app_dict["secret"] = app.secret
 
-    return render_template("developer/apps_id.html",
+    return render_template("dashboard/developer/apps_id.html",
                            app=app_dict, account=user_asdict(account))
 
 
@@ -173,25 +170,25 @@ def html_admin(account):
 
 
 @flask.route("/register")
-@no_auth("/account")
+@no_auth("/dashboard/account/profile")
 def html_register():
     return render_template("account/register.html")
 
 
 @flask.route("/register/resend")
-@no_auth("/account")
+@no_auth("/dashboard/account/profile")
 def html_register_resend():
     return render_template("account/register_resend.html")
 
 
 @flask.route("/verify")
-@no_auth("/account")
+@no_auth("/dashboard/account/profile")
 def html_verify():
     return render_template("account/verify.html")
 
 
 @flask.route("/login")
-@no_auth("/account")
+@no_auth("/dashboard/account/profile")
 def html_login():
     return render_template("account/login.html")
 
@@ -297,7 +294,7 @@ def api_register(name, email, password):
 
     db.session.commit()
 
-    shutil.copyfile("./media/logo.webp", f"./icon/{id}.webp")
+    shutil.copyfile("./media/logo.webp", f"./pfp/{id}.webp")
 
     verify_token = gen_token()
     verify_cache.append({"id": id,
@@ -541,6 +538,35 @@ def api_users_id(account, id):
                 "error": "user_unverified"}, 403
 
     return user_asdict(user), 200
+
+
+@flask.route("/users/<int:id>/pfp")
+def pfp_handler(id):
+    if not id:
+        return {"text": "Please specify a value for 'id'!",
+                "error": "invalid_id"}, 400
+
+    if not isinstance(id, int):
+        return {"text": ("Value for 'id' must be type "
+                         "int!"),
+                "error": "invalid_id"}, 400
+
+    if len(str(id)) < 12:
+        return {"text": ("Value for 'id' must be at least "
+                         "12 characters!"),
+                "error": "invalid_id"}, 400
+
+    if len(str(id)) > 12:
+        return {"text": ("Value for 'id' must be at most "
+                         "12 characters!"),
+                "error": "invalid_id"}, 400
+
+    user = User.query.filter_by(id=id).first()
+    if not user:
+        return {"text": "User does not exist!",
+                "error": "invalid_user_id"}, 404
+
+    return send_file(f"./pfp/{secure_filename(str(id))}.webp")
 
 
 # Admin
@@ -1285,6 +1311,7 @@ def api_apps_update(account, id, callback, name, website):
     if callback:
         if callback[:7] != "http://" and callback[:8] != "https://":
             callback = "https://" + callback
+
         app.callback = callback
 
     if website:

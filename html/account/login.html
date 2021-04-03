@@ -327,7 +327,7 @@ window.login = async function(token) {
             location.replace("/oauth/authorize?response_type=" + window.response_type + "&app_id=" + window.app_id)
         } 
         else {
-            location.replace("/account")
+            location.replace("/dashboard/account/profile")
         }
         return
     } else {
